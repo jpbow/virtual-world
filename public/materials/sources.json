@@ -1,0 +1,74 @@
+{
+  "license": "CC0-1.0",
+  "credit": "Powered by Poly Haven",
+  "assets": [
+    {
+      "id": "grass_ground",
+      "source": "https://polyhaven.com/a/grass_ground",
+      "authors": {
+        "Charlotte Baglioni": "All"
+      },
+      "license": "CC0-1.0",
+      "files": {
+        "Diffuse": {
+          "path": "materials/grass_ground-Diffuse.jpg",
+          "sha256": "a79cc5ed65af0f80261b39a383b64a8c5272c5144d724deb43dbc29f0e4cd19b"
+        },
+        "nor_gl": {
+          "path": "materials/grass_ground-nor_gl.jpg",
+          "sha256": "7000e2ccd479bb7b66dcdf4faef7b47554324566886314ca620cbf03e274e826"
+        },
+        "Rough": {
+          "path": "materials/grass_ground-Rough.jpg",
+          "sha256": "111341f948b7e073edf7ac6add8777e1bf10df8959400df3863243e89bbc8c08"
+        }
+      },
+      "tileMeters": 2.509999990463257
+    },
+    {
+      "id": "forest_floor",
+      "source": "https://polyhaven.com/a/forest_floor",
+      "authors": {
+        "eye-candy.xyz": "All"
+      },
+      "license": "CC0-1.0",
+      "files": {
+        "Diffuse": {
+          "path": "materials/forest_floor-Diffuse.jpg",
+          "sha256": "f12e5adea1741f9eb7a528bfc621f8267885b9530b74c3a8afdb823899bdbf0b"
+        },
+        "nor_gl": {
+          "path": "materials/forest_floor-nor_gl.jpg",
+          "sha256": "681f3de8c756c4d19bcda33039f953295498f38b1425ce9d56b37d6f97f6e518"
+        },
+        "Rough": {
+          "path": "materials/forest_floor-Rough.jpg",
+          "sha256": "ece0b331f08c03f3edcd8ab6815b74a5ae20768beef64cd4f96a5b2fa26e116e"
+        }
+      },
+      "tileMeters": 2.1399996280670166
+    },
+    {
+      "id": "tree_small_02",
+      "source": "https://polyhaven.com/a/tree_small_02",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "license": "CC0-1.0",
+      "files": {
+        "sourceGLTF": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/tree_small_02/tree_small_02_1k.gltf"
+      }
+    },
+    {
+      "id": "shrub_02",
+      "source": "https://polyhaven.com/a/shrub_02",
+      "authors": {
+        "Rico Cilliers": "All"
+      },
+      "license": "CC0-1.0",
+      "files": {
+        "sourceGLTF": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_02/shrub_02_1k.gltf"
+      }
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Cordyline australis \u2014 t\u012b k\u014duka / cabbage tree",
+  "author": "PlantCatalog",
+  "source": "https://sketchfab.com/3d-models/realistic-hd-cabbage-tree-1850-3d22d3ed01ad4f589b3bfcbcae294407",
+  "license": "CC-BY-4.0",
+  "changes": "Runtime origin/height normalization, instancing and scaling; vertex colours may be disabled per catalog. Species placement is inferred, not surveyed.",
+  "file": {
+    "bytes": 7822476,
+    "triangles": 85160,
+    "parts": 10,
+    "sha256": "174a265ca8154a95afa07e4d464e23fc8993f1a94c3078a5d9e7aaa8f5ea7295"
+  }
+}

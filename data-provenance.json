@@ -1,0 +1,399 @@
+{
+  "version": 1,
+  "name": "Lyttelton / Whakaraup\u014d",
+  "center": {
+    "longitude": 172.72,
+    "latitude": -43.603
+  },
+  "crs": "EPSG:2193",
+  "verticalDatum": "NZVD2016",
+  "origin": [
+    1577402.1004470254,
+    5172181.456113616
+  ],
+  "bounds": [
+    1572402.1004470254,
+    5167181.456113616,
+    1582402.1004470254,
+    5177181.456113616
+  ],
+  "extentMeters": 10000,
+  "terrainSpacing": 10,
+  "imagerySpacing": 1,
+  "generatedAt": "2026-10-19T08:05:01Z",
+  "osmTimestamp": "2026-10-19T06:42:09Z",
+  "sources": [
+    {
+      "title": "New Zealand LiDAR 1m DEM",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/new-zealand/new-zealand/dem_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2008-04-30T12:00:00Z",
+          "2026-05-02T12:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "licensor",
+            "processor",
+            "producer"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Canterbury - Banks Peninsula LiDAR 1m DEM (2023)",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/canterbury/banks-peninsula_2023/dem_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2023-02-17T11:00:00Z",
+          "2023-08-14T12:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Landpro",
+          "roles": [
+            "producer"
+          ]
+        },
+        {
+          "name": "Environment Canterbury",
+          "roles": [
+            "licensor"
+          ]
+        },
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "processor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Canterbury - Christchurch LiDAR 1m DEM (2024-2025)",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/canterbury/christchurch_2024-2025/dem_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2024-12-09T11:00:00Z",
+          "2025-01-19T11:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "processor"
+          ]
+        },
+        {
+          "name": "Aerial Surveys",
+          "roles": [
+            "producer"
+          ]
+        },
+        {
+          "name": "Environment Canterbury",
+          "roles": [
+            "licensor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "New Zealand LiDAR 1m DSM",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/new-zealand/new-zealand/dsm_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2010-03-17T11:00:00Z",
+          "2026-05-02T12:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "licensor",
+            "processor",
+            "producer"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Canterbury - Banks Peninsula LiDAR 1m DSM (2023)",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/canterbury/banks-peninsula_2023/dsm_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2023-02-17T11:00:00Z",
+          "2023-08-14T12:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Landpro",
+          "roles": [
+            "producer"
+          ]
+        },
+        {
+          "name": "Environment Canterbury",
+          "roles": [
+            "licensor"
+          ]
+        },
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "processor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Canterbury - Christchurch LiDAR 1m DSM (2024-2025)",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/canterbury/christchurch_2024-2025/dsm_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2024-12-09T11:00:00Z",
+          "2025-01-19T11:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "processor"
+          ]
+        },
+        {
+          "name": "Aerial Surveys",
+          "roles": [
+            "producer"
+          ]
+        },
+        {
+          "name": "Environment Canterbury",
+          "roles": [
+            "licensor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Canterbury 0.25m Rural Aerial Photos (2025)",
+      "url": "https://nz-imagery.s3-ap-southeast-2.amazonaws.com/canterbury/canterbury_2025_0.25m/rgb/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2025-02-04T11:00:00Z",
+          "2025-04-08T12:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "processor"
+          ]
+        },
+        {
+          "name": "Aerial Surveys",
+          "roles": [
+            "producer"
+          ]
+        },
+        {
+          "name": "Environment Canterbury",
+          "roles": [
+            "licensor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Christchurch 0.075m Urban Aerial Photos (2025)",
+      "url": "https://nz-imagery.s3-ap-southeast-2.amazonaws.com/canterbury/christchurch_2025_0.075m/rgb/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2025-03-14T11:00:00Z",
+          "2025-03-15T11:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "processor"
+          ]
+        },
+        {
+          "name": "Aerial Surveys",
+          "roles": [
+            "producer"
+          ]
+        },
+        {
+          "name": "Environment Canterbury",
+          "roles": [
+            "licensor"
+          ]
+        }
+      ]
+    },
+    {
+      "title": "New Zealand 1m DEM Hillshade",
+      "url": "https://nz-elevation.s3-ap-southeast-2.amazonaws.com/new-zealand/new-zealand/dem-hillshade_1m/2193/collection.json",
+      "license": "CC-BY-4.0",
+      "dates": [
+        [
+          "2008-04-30T12:00:00Z",
+          "2026-05-02T12:00:00Z"
+        ]
+      ],
+      "providers": [
+        {
+          "name": "Toit\u016b Te Whenua Land Information New Zealand",
+          "roles": [
+            "host",
+            "licensor",
+            "processor",
+            "producer"
+          ]
+        }
+      ],
+      "role": "terrain-detail hillshade"
+    }
+  ],
+  "missingLandPixels2m": 0,
+  "stats": {
+    "buildings": 14934,
+    "roads": 5735,
+    "trees": 628066,
+    "roofSources": {
+      "dsm": 10805,
+      "osm": 4,
+      "default": 4125
+    },
+    "fittedGables": 1926
+  },
+  "approximations": [
+    "Building facades are untextured procedural walls.",
+    "Roof fits use a 2 m resampling of the 1 m DSM; unsupported forms use measured flat roofs.",
+    "Road widths without OSM measurements use class defaults. Bridges use endpoint interpolation; tunnels are omitted.",
+    "Water is a flat coastline-constrained surface at 0 m NZVD2016, not a tide model.",
+    "Ground classes use RGB/height heuristics and OSM masks; colours, shadows and survey-date differences can cause classification errors.",
+    "Generated ground materials contain no aerial RGB. Grass, rock, soil and paving are procedural material families.",
+    "Roof colours are robust aerial RGB samples and can retain lighting bias; facade materials are inferred.",
+    "Vegetation instances combine measured canopy peaks with coverage fill and low-scrub clusters. Mapped woodland supports shaded foliage; species and crown widths remain approximate.",
+    "Ground vegetation condition and canopy occupancy are categorical image estimates. DEM horizons shade terrain, and optional LINZ hillshade contributes only local fine-relief lighting; the terrain mesh remains 10 m at its finest level."
+  ],
+  "surface": {
+    "version": 1,
+    "spacing": 2,
+    "classes": [
+      "grass",
+      "rock",
+      "soil",
+      "paving",
+      "canopy",
+      "water"
+    ],
+    "overview": "surface-overview.png",
+    "index": "surface-index.u8",
+    "indexSamples": 1000,
+    "maskGutterPixels": 1,
+    "landscapeControls": "landscape-controls.png",
+    "landscapeChannels": [
+      "canopy occupancy",
+      "growing grass category",
+      "DEM sky openness",
+      "DEM sun visibility"
+    ],
+    "method": "RGB/height rules constrained by OSM buildings, roads and coastlines; not a trained semantic model",
+    "areaKm2": {
+      "grass": 36.89,
+      "rock": 1.956,
+      "soil": 0.017,
+      "paving": 11.022,
+      "canopy": 15.644,
+      "water": 34.472
+    },
+    "canopyPeaks": 36909,
+    "woodlandFallbackTrees": 0,
+    "canopyFillInstances": 591157,
+    "lowVegetationInstances": 418472,
+    "placementMethod": "Canopy peaks plus footprint coverage fill; broad crowns and low-scrub clusters approximate vegetation mass",
+    "roofColors": 13399,
+    "coverage": {
+      "vegetationInstances": 628066,
+      "canopyEvidenceKm2": 15.654,
+      "crownCoverageFraction": 0.9319
+    },
+    "generatedAt": "2026-10-19T09:00:44Z",
+    "terrainRelief": "terrain-relief.png",
+    "reliefMethod": "LINZ published 1m DEM hillshade, sampled at 2m; local ratio removes broad fixed-direction lighting, resampled to 5m"
+  },
+  "validation": {
+    "pythonTestsPassed": 25,
+    "browserTestsPassed": 7,
+    "sharedTerrainEdgesChecked": 180,
+    "surfaceGuttersChecked": 180,
+    "browserExternalRequests": 0,
+    "browserPageErrors": 0,
+    "browserConsoleErrors": 0,
+    "generatedTerrainBindsAerialMap": false,
+    "captures": [
+      ".impeccable/review/desktop.png",
+      ".impeccable/review/town.png",
+      ".impeccable/review/ground.png",
+      ".impeccable/review/reference.png",
+      ".impeccable/review/mobile.png",
+      ".impeccable/review/native-plants.png"
+    ],
+    "matchedComparisonViews": [
+      "harbour",
+      "town",
+      "hills",
+      "diamond"
+    ]
+  },
+  "nativePlants": {
+    "version": 1,
+    "models": [
+      {
+        "id": "cordyline-australis",
+        "species": "Cordyline australis \u2014 t\u012b k\u014duka / cabbage tree",
+        "url": "/plants/cc-by/cordyline-australis.glb",
+        "author": "PlantCatalog",
+        "license": "CC-BY-4.0",
+        "source": "https://sketchfab.com/3d-models/realistic-hd-cabbage-tree-1850-3d22d3ed01ad4f589b3bfcbcae294407",
+        "kind": "tree",
+        "minHeight": 3.5,
+        "maxHeight": 9.0,
+        "density": 0.025,
+        "ignoreVertexColors": true
+      }
+    ],
+    "placement": "Illustrative species assignment at a deterministic subset of height-compatible vegetation locations; not surveyed species identification",
+    "credits": "public/plants/ATTRIBUTION.md"
+  }
+}

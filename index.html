@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#163d40" />
+    <meta name="description" content="Explore Lyttelton, Whakaraupō and the Port Hills in a locally generated world built from LINZ and OpenStreetMap data." />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <title>Lyttelton — a world in progress</title>
+  </head>
+  <body>
+    <div id="app">
+      <canvas id="world" aria-label="Interactive 3D landscape of Lyttelton and the Port Hills" tabindex="0"></canvas>
+      <header class="title-bar">
+        <div><h1>Lyttelton<span> / Whakaraupō</span></h1><p>Harbour, township & the Port Hills</p></div>
+        <button id="reset" title="Return to the harbour view">Reset view</button>
+      </header>
+      <aside id="panel" aria-label="World controls">
+        <button id="panel-toggle" aria-expanded="true" aria-controls="panel-content">Explore the landscape <svg class="disclosure" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h10"/><path class="vertical" d="M8 3v10"/></svg></button>
+        <div id="panel-content">
+          <fieldset class="views"><legend>Go to a place</legend>
+            <button data-view="harbour" class="selected">Harbour</button><button data-view="town">Lyttelton</button>
+            <button data-view="hills">Port Hills</button><button data-view="diamond">Diamond Harbour</button>
+          </fieldset>
+          <fieldset class="navigation"><legend>Navigation</legend><div class="segmented">
+            <button id="orbit" aria-pressed="true">Orbit</button><button id="fly" aria-pressed="false">Fly</button>
+          </div><p id="navigation-help">Drag to orbit · scroll to zoom<br>Right-drag to pan</p></fieldset>
+          <fieldset class="layers"><legend>Layers</legend>
+            <label><input type="checkbox" id="imagery"><span>Aerial reference</span></label>
+            <label><input type="checkbox" id="buildings" checked><span>Buildings</span></label>
+            <label><input type="checkbox" id="roads" checked><span>Roads & paths</span></label>
+            <label><input type="checkbox" id="vegetation" checked><span>Trees & vegetation</span></label>
+            <label><input type="checkbox" id="wireframe"><span>Terrain wireframe</span></label>
+          </fieldset>
+          <div class="data-note"><span class="status-dot" aria-hidden="true"></span><span id="data-summary">Reading local world…</span></div>
+          <button id="sources-toggle" class="text-button" aria-expanded="false" aria-controls="sources">About this world & sources</button>
+          <div id="sources" hidden><p>Generated ground materials and scenery. Aerial imagery is available for comparison.</p><p id="survey-info"></p><p id="roof-info"></p><ul id="limitations"></ul><p><a href="/world/manifest.json" target="_blank" rel="noopener">Open data manifest</a></p></div>
+        </div>
+      </aside>
+      <section id="inspector" aria-label="Selected building" hidden><button id="close-inspector" aria-label="Close building information"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg></button><h2 id="building-title"></h2><dl id="building-details"></dl><p>Wall appearance is procedural.</p></section>
+      <div id="loading" role="status" aria-live="polite"><span class="loader" aria-hidden="true"></span><div><strong id="loading-title">Preparing your view</strong><p id="loading-detail">Loading the local world manifest…</p></div><button id="retry" hidden>Try again</button></div>
+      <footer>
+        <div class="location"><svg id="north-arrow" width="22" height="28" viewBox="0 0 22 28" aria-hidden="true"><path d="M11 2 18 21 11 17 4 21Z" fill="currentColor"/><path d="M11 2V17" stroke="#dce6df"/></svg><span id="coordinates">43.603° S · 172.720° E</span><span id="camera-height"></span></div>
+        <div class="attribution"><a href="https://www.linz.govt.nz/products-services/data/licensing-and-using-data" target="_blank" rel="noopener">LINZ & survey providers · CC BY 4.0</a><span> / </span><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a></div>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

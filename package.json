@@ -1,0 +1,30 @@
+{
+  "name": "lyttelton-world",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "data": ".venv/bin/python tools/prepare.py",
+    "validate:data": ".venv/bin/python tools/validate.py",
+    "test": ".venv/bin/python -m unittest discover -s tests",
+    "surfaces": ".venv/bin/python tools/surfaces.py",
+    "compare": "node tools/compare.mjs",
+    "hillshade": ".venv/bin/python tools/hillshade.py",
+    "plant:install": ".venv/bin/python tools/install_plant.py",
+    "assets:fetch": ".venv/bin/python tools/fetch_surface_assets.py",
+    "assets:foliage": "node tools/prepare_foliage.mjs"
+  },
+  "dependencies": {
+    "three": "^0.180.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0",
+    "@types/three": "^0.180.0",
+    "meshoptimizer": "^1.3.0",
+    "typescript": "^5.9.0",
+    "vite": "^7.1.0"
+  }
+}

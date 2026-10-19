@@ -1,0 +1,11 @@
+.venv/
+.cache/
+public/world/
+dist/
+node_modules/
+*.tsbuildinfo
+.impeccable/review/
+test-results/
+playwright-report/
+reports/comparison/
+public/plants/imported/
