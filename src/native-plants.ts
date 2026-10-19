@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {crownColour} from './crowns';
 
-interface PlantAsset {
+export interface PlantAsset {
   id:string;species:string;url:string;author:string;license:string;source:string;
   kind:'tree'|'shrub';minHeight:number;maxHeight:number;density?:number;ignoreVertexColors?:boolean;role?:'representative'|'species';range?:number;
 }
@@ -9,10 +10,13 @@ interface Chunk {
   plants:number[][];crowns:THREE.InstancedMesh;trunks:THREE.InstancedMesh;
   trunkIndices:Int32Array;cx:number;north:number;
 }
-interface Model {asset:PlantAsset;parts:THREE.InstancedMesh[];width:number;depth:number;triangles:number}
+export interface PlantModel {asset:PlantAsset;parts:THREE.InstancedMesh[];foliage?:THREE.InstancedMesh;width:number;depth:number;triangles:number}
+type Model=PlantModel;
 interface Selection {chunk:Chunk;index:number;model:Model;distance:number}
 interface Hidden {mesh:THREE.InstancedMesh;index:number;matrix:THREE.Matrix4}
-const LIMIT=512,RANGE=180,TRIANGLE_BUDGET=4_000_000;
+// Capacity per model, total instance limit and submitted-triangle budget.
+export const MODEL_CAPACITY=1200;
+const LIMIT=2000,RANGE=180,TRIANGLE_BUDGET=6_000_000,NATIVE_LIMIT=48;
 
 export function localPlantUrl(path:string):boolean {
   return /^\/plants\/[a-zA-Z0-9_./-]+\.glb$/.test(path)&&!path.includes('..');
@@ -28,6 +32,7 @@ export class NativePlants {
   private models:Model[]=[];
   private hidden:Hidden[]=[];
   private lastPosition=new THREE.Vector3(Infinity,Infinity,Infinity);
+  private lastDirection=new THREE.Vector3();
   private disposed=false;
   constructor(private heightAt:(x:number,z:number)=>number){this.group.name='Native plant models';}
   get credits(){return this.models.map(m=>m.asset);}
@@ -49,6 +54,15 @@ export class NativePlants {
     return nearby;
   }
   register(chunk:Chunk){this.chunks.push(chunk);}
+  /** Add generated models that need no catalog entry or download. */
+  addModels(models:Model[]){
+    if(this.disposed){for(const m of models)for(const p of m.parts)p.geometry.dispose();return;}
+    for(const model of models){this.models.push(model);for(const part of model.parts)this.group.add(part);}
+    this.status.representativeModels=this.models.filter(m=>m.asset.role==='representative').length;
+    this.status.loaded=this.models.length;
+    if(this.models.length)this.status.state='ready';
+    this.lastPosition.set(Infinity,Infinity,Infinity);
+  }
   async load(onStatus:()=>void){
     try{
       const response=await fetch('/plants/catalog.json');
@@ -62,8 +76,8 @@ export class NativePlants {
         try{this.models.push(await this.loadModel(asset));}catch{this.status.failed++;}
       }
       this.status.loaded=this.models.length;
-      this.status.species=this.models.filter(m=>m.asset.role!=='representative').map(m=>m.asset.species);
       this.status.representativeModels=this.models.filter(m=>m.asset.role==='representative').length;
+      this.status.species=this.models.filter(m=>m.asset.role!=='representative').map(m=>m.asset.species);
       this.status.state=this.models.length?'ready':this.status.failed?'unavailable':'awaiting-assets';
     }catch{this.status.state='unavailable';this.status.failed++;}
     if(!this.disposed)onStatus();
@@ -95,7 +109,7 @@ export class NativePlants {
         m.side=THREE.DoubleSide;
         if(asset.ignoreVertexColors&&'vertexColors' in m)m.vertexColors=false;
       }
-      const mesh=new THREE.InstancedMesh(geometry,material,LIMIT);mesh.count=0;
+      const mesh=new THREE.InstancedMesh(geometry,material,NATIVE_LIMIT);mesh.count=0;
       mesh.name=`${asset.role==='representative'?'Representative foliage':'Native plant'}: ${asset.species}`;parts.push(mesh);
     });
     if(!parts.length||parts.length>16||triangles>250000){
@@ -106,8 +120,16 @@ export class NativePlants {
     return{asset,parts,width:size.x/size.y,depth:size.z/size.y,triangles};
   }
   update(camera:THREE.Camera){
-    if(!this.models.length||camera.position.distanceToSquared(this.lastPosition)<25)return;
-    this.lastPosition.copy(camera.position);
+    const forward=camera.getWorldDirection(new THREE.Vector3());
+    if(!this.models.length||(camera.position.distanceToSquared(this.lastPosition)<25&&forward.dot(this.lastDirection)>.996))return;
+    this.lastPosition.copy(camera.position);this.lastDirection.copy(forward);
+    // Only spend the detail budget on plants inside a widened view cone.
+    let cone=.35;
+    if(camera instanceof THREE.PerspectiveCamera){
+      const half=THREE.MathUtils.degToRad(camera.fov/2),diagonal=Math.atan(Math.tan(half)*Math.hypot(1,camera.aspect));
+      cone=Math.cos(Math.min(Math.PI*.95,diagonal+THREE.MathUtils.degToRad(18)));
+    }
+    const toPlant=new THREE.Vector3();
     for(const item of this.hidden){item.mesh.setMatrixAt(item.index,item.matrix);item.mesh.instanceMatrix.needsUpdate=true;}
     this.hidden=[];
     const candidates:Selection[]=[];
@@ -117,6 +139,7 @@ export class NativePlants {
         const [x,n,z,h]=plant;
         const distance=Math.hypot(camera.position.x-x,camera.position.y-(z+h*.5),camera.position.z+n);
         if(distance>RANGE)return;
+        if(distance>h+12&&toPlant.set(x-camera.position.x,z+h*.5-camera.position.y,-n-camera.position.z).normalize().dot(forward)<cone)return;
         const eligible=this.eligible(plant,index);
         if(!eligible.length)return;
         const model=eligible[(index*31+Math.abs(Math.round(x+n)))%eligible.length];
@@ -125,29 +148,56 @@ export class NativePlants {
       });
     }
     candidates.sort((a,b)=>a.distance-b.distance);
-    const counts=new Map<Model,number>(),matrix=new THREE.Matrix4(),object=new THREE.Object3D();
+    const counts=new Map<Model,number>(),object=new THREE.Object3D(),tint=new THREE.Color(),up=new THREE.Vector3(0,1,0),normal=new THREE.Vector3();
     const hide=(mesh:THREE.InstancedMesh,index:number)=>{
       if(index<0)return;
       const original=new THREE.Matrix4();mesh.getMatrixAt(index,original);this.hidden.push({mesh,index,matrix:original});
       mesh.setMatrixAt(index,new THREE.Matrix4().makeScale(0,0,0));mesh.instanceMatrix.needsUpdate=true;
     };
+    const place=(model:Model,plant:number[])=>{
+      const slot=counts.get(model)??0;
+      if(slot>=(model.asset.role==='representative'?MODEL_CAPACITY:NATIVE_LIMIT))return false;
+      object.updateMatrix();
+      for(const part of model.parts)part.setMatrixAt(slot,object.matrix);
+      if(model.foliage)model.foliage.setColorAt(slot,foliageTint(plant[7],tint));
+      counts.set(model,slot+1);return true;
+    };
     let total=0,rendered=0,nativeActive=0;
     for(const {chunk,index,model} of candidates){
       const representative=model.asset.role==='representative';
-      if(rendered>=LIMIT||total+model.triangles>TRIANGLE_BUDGET||(!representative&&nativeActive>=48))continue;
-      const plant=chunk.plants[index],slot=counts.get(model)??0;
-      object.position.set(plant[0],plant[2],-plant[1]);object.rotation.set(0,plant[4],0);object.scale.setScalar(plant[3]);
-      if(representative){const diameter=2*(plant[5]??plant[3]*.34);object.scale.set(diameter/model.width,plant[3],diameter/model.depth);}
+      if(rendered>=LIMIT||total+model.triangles>TRIANGLE_BUDGET||(!representative&&nativeActive>=NATIVE_LIMIT))continue;
+      const plant=chunk.plants[index],[x,n,ground,h,rotation]=plant,radius=plant[5]??h*.34;
+      let placed=0;
       if(representative&&plant[6]===1){
-        const x=plant[0],z=-plant[1],normal=new THREE.Vector3(this.heightAt(x-4,z)-this.heightAt(x+4,z),8,this.heightAt(x,z-4)-this.heightAt(x,z+4)).normalize();
-        object.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),normal);object.rotateY(plant[4]);
+        // A low-scrub instance is a measured cluster, not one plant: fill it
+        // with several naturally proportioned bushes instead of stretching one.
+        const bushes=this.models.filter(m=>m.asset.role==='representative'&&m.asset.kind==='shrub');
+        const count=Math.min(9,Math.max(2,Math.round(radius*radius*.9/Math.max(1,h*h*2.4))));
+        const seed=hashPlant(plant,index);
+        for(let i=0;i<count&&rendered<LIMIT;i++){
+          const bush=bushes[(seed+i*7)%bushes.length];
+          if(total+bush.triangles>TRIANGLE_BUDGET)break;
+          const angle=rotation+i*2.39996,distance=i===0?0:radius*.62*Math.sqrt((i+.35*unit(seed,i))/count);
+          const bx=x+Math.cos(angle)*distance,bz=-n+Math.sin(angle)*distance;
+          const height=h*(.72+.38*unit(seed,i+11)),spread=Math.min(4.5,height*(1.6+unit(seed,i+23)));
+          normal.set(this.heightAt(bx-3,bz)-this.heightAt(bx+3,bz),6,this.heightAt(bx,bz-3)-this.heightAt(bx,bz+3)).normalize().lerp(up,.5).normalize();
+          object.quaternion.setFromUnitVectors(up,normal);object.rotateY(angle*3.1);
+          object.position.set(bx,this.heightAt(bx,bz)-height*.08,bz);
+          object.scale.set(spread/bush.width,height,spread/bush.depth);
+          if(place(bush,plant)){total+=bush.triangles;rendered++;placed++;}
+        }
+      }else{
+        object.position.set(x,ground-.15,-n);object.rotation.set(0,rotation,0);object.scale.setScalar(h);
+        if(representative){
+          // Keep natural proportions; follow measured crown width only loosely.
+          const diameter=2*radius,stretch=THREE.MathUtils.clamp(diameter/(model.width*h),.8,1.3);
+          object.scale.set(h*stretch,h,h*stretch);
+        }
+        if(place(model,plant)){total+=model.triangles;rendered++;placed++;if(!representative)nativeActive++;}
       }
-      object.updateMatrix();matrix.copy(object.matrix);
-      for(const part of model.parts)part.setMatrixAt(slot,matrix);
-      total+=model.triangles;rendered++;if(!representative)nativeActive++;
-      counts.set(model,slot+1);hide(chunk.crowns,index);hide(chunk.trunks,chunk.trunkIndices[index]);
+      if(placed){hide(chunk.crowns,index);hide(chunk.trunks,chunk.trunkIndices[index]);}
     }
-    for(const model of this.models)for(const part of model.parts){part.count=counts.get(model)??0;part.instanceMatrix.needsUpdate=true;part.computeBoundingSphere();}
+    for(const model of this.models)for(const part of model.parts){part.count=counts.get(model)??0;part.instanceMatrix.needsUpdate=true;if(part.instanceColor)part.instanceColor.needsUpdate=true;part.computeBoundingSphere();}
     this.status.active=rendered;this.status.nativeActive=nativeActive;this.status.triangles=total;
   }
   dispose(){
@@ -157,4 +207,18 @@ export class NativePlants {
     }}
     this.chunks=[];this.models=[];this.hidden=[];
   }
+}
+
+function hashPlant(plant:number[],index:number){
+  return ((Math.round(plant[0]*100)*73856093)^(Math.round(plant[1]*100)*19349663)^index)>>>0;
+}
+function unit(seed:number,i:number){
+  const v=Math.sin(seed*.0001+i*12.9898)*43758.5453;return v-Math.floor(v);
+}
+/** Leaf tint: follow the aerial-sampled crown hue, keep texture brightness. */
+function foliageTint(packed:number|undefined,target:THREE.Color){
+  crownColour(packed,0,target);
+  const luminance=Math.max(.002,target.r*.2126+target.g*.7152+target.b*.0722);
+  target.multiplyScalar(1/luminance);
+  return target.setRGB(.5+.5*Math.min(1.6,target.r),.5+.5*Math.min(1.6,target.g),.5+.5*Math.min(1.6,target.b)).multiplyScalar(.82);
 }

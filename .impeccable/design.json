@@ -403,10 +403,10 @@
       "nativePlantModels": {
         "installed": "One actual textured PlantCatalog Cordyline australis (t\u012b k\u014duka / cabbage tree) GLB under CC BY 4.0; not a completed flora library.",
         "placement": "Within 180 m, capped at 48 instances; deterministic 2.5% subset of compatible measured heights from 3.5\u20139 m. Species assignment is illustrative, not aerial identification.",
-        "fallback": "Distant, unavailable and over-budget vegetation retains generated crown/trunk or scrub proxies. Nearby compatible proxies can use representative broadleaf models.",
+        "fallback": "Distant, unavailable and over-budget vegetation retains generated crown/trunk or scrub proxies. Nearby compatible proxies use representative procedural trees and bushes.",
         "inspection": "A full-width Native plants shortcut appears in the existing destinations only after a model loads. Inspection angles are checked against terrain, neighbouring crowns and buildings without hiding scenery.",
-        "credits": "Sources show model author, licence and source links, plus Powered by Poly Haven \u00b7 CC0 for representative foliage and ground scans. Cabbage tree remains CC BY 4.0. Asset credits: public/plants/ATTRIBUTION.md and public/materials/ATTRIBUTION.md.",
-        "representative": "Three CC0 Poly Haven broadleaf variants: one tree and two shrubs, within 85 m. These are representative foliage rather than verified NZ native species. Models fit evidence-guided height and crown radius; low shrubs align with terrain.",
+        "credits": "Sources show model author, licence and source links, plus Powered by Poly Haven \u00b7 CC0 for ground and road scans, and EZ-Tree (MIT) for representative trees and bushes. Cabbage tree remains CC BY 4.0. Asset credits: public/plants/ATTRIBUTION.md and public/materials/ATTRIBUTION.md.",
+        "representative": "Ten procedural EZ-Tree (MIT) variants: trees within 150\u2013170 m and bushes within 75 m. These are representative forms rather than verified NZ native species. Trees fit LiDAR height and loosely follow crown width; low-scrub clusters are filled with several terrain-aligned bushes.",
         "budget": "512 total detailed instances and 4 million submitted triangles. Named cabbage trees remain capped at 48 within 180 m. Compatible named-species assignments take precedence over representative variants."
       },
       "scannedGround": {

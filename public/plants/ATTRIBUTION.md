@@ -10,13 +10,8 @@ Downloaded through Sketchfab's authorised download control on 20 October 2026, a
 
 The downloaded file is unmodified. At runtime we normalize its origin and height, scale it to selected LiDAR vegetation heights, instance it, render materials double-sided, and ignore vertex colours whose original purpose is material blending rather than diffuse colour. The original textures and geometry remain in the GLB. Species placement is illustrative; the aerial/height classifier does not identify individual cabbage trees.
 
-## Representative broadleaf foliage
+## Representative procedural trees and bushes
 
-**Powered by Poly Haven.** The following source assets are CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/):
+Nearby trees and bushes other than the cabbage tree are generated in the browser with **EZ-Tree** by Daniel Greenheck (MIT licence): https://github.com/dgreenheck/ez-tree. Its bundled bark and leaf textures ship with the npm package `@dgreenheck/ez-tree`; its bark README credits Poly Haven (CC0) and TextureCan sources.
 
-- Tree Small 02: https://polyhaven.com/a/tree_small_02
-- Shrub 02: https://polyhaven.com/a/shrub_02
-
-Prepared assets: `cc0/broadleaf-tree.glb`, `cc0/broadleaf-shrub-a.glb`, and `cc0/broadleaf-shrub-b.glb`. Author credits are retained in the plant catalog and material source manifest. Meshoptimizer reduces the geometry; original 1K textures are embedded without image edits. Shrub variants are separated from the source collection. Each asset has a `.credit.json` containing its source and triangle counts.
-
-These are **representative canopy and scrub models**, not a claim that the source species are New Zealand natives or that those species have been identified at the rendered locations. Runtime fits their height and crown footprint to the existing evidence-derived vegetation, with simpler geometry at distance. The cabbage tree remains the botanically named native species.
+Ten variants (broadleaf, slender, tall broadleaf, conifer and three bush forms) are generated from the library's presets with denser leaf settings and green leaf textures. These are **representative forms**, not a claim that those species occur at the rendered locations. Runtime fits height to LiDAR vegetation, follows measured crown width only loosely to keep natural proportions, fills low-scrub clusters with several bushes, and tints leaves toward the aerial-sampled crown colour.

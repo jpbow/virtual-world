@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type {Building, Road, WaterPolygon} from './types';
+import type {Building, WaterPolygon} from './types';
 
 export function terrainGeometry(heights:Float32Array,step:number):THREE.BufferGeometry {
   const segments=100/step, side=segments+1, vertices:number[]=[],uvs:number[]=[],indices:number[]=[];
@@ -85,23 +85,6 @@ export function buildingGeometry(buildings:Building[]):{walls:THREE.BufferGeomet
   });
   function geometry(p:number[],c:number[]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(c,3));g.computeVertexNormals();g.computeBoundingSphere();return g;}
   return{walls:geometry(walls,wallColors),roofs:geometry(roofs,roofColors),roofOwners,wallOwners};
-}
-
-export function roadsGeometry(roads:Road[],paths:boolean):THREE.BufferGeometry {
-  const p:number[]=[],colors:number[]=[];
-  for(const road of roads){
-    const isPath=['footway','path','steps','cycleway','track','bridleway'].includes(road.kind);
-    if(isPath!==paths)continue;
-    const color=new THREE.Color(road.bridge?'#bba680':isPath?'#b5ad87':'#767b73');
-    for(let i=0;i<road.points.length-1;i++){
-      const a=road.points[i],b=road.points[i+1],dx=b[0]-a[0],dy=b[1]-a[1],len=Math.hypot(dx,dy);
-      if(len<.01)continue;
-      const ox=-dy/len*road.width/2,oy=dx/len*road.width/2;
-      const l=[a[0]+ox,a[2],-a[1]-oy],r=[a[0]-ox,a[2],-a[1]+oy],l2=[b[0]+ox,b[2],-b[1]-oy],r2=[b[0]-ox,b[2],-b[1]+oy];
-      p.push(...l,...r,...l2,...r,...r2,...l2);for(let j=0;j<6;j++)colors.push(color.r,color.g,color.b);
-    }
-  }
-  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(p,3));g.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));g.computeVertexNormals();g.computeBoundingSphere();return g;
 }
 
 export function waterGeometry(polygons:WaterPolygon[]):THREE.BufferGeometry {

@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import {terrainGeometry,buildingGeometry,roadsGeometry,waterGeometry} from './geometry';
+import {terrainGeometry,buildingGeometry,waterGeometry} from './geometry';
+import {roadGeometry,loadRoadTextures,makeRoadSurfaceMaterial,type RoadSurface,type RoadTextures} from './roads';
 import type {Manifest,Features,TileInfo,Building} from './types';
-import {makeTerrainMaterial,setTerrainReference,makeRoadMaterial,makeLeafMaterial} from './materials';
+import {makeTerrainMaterial,setTerrainReference,makeLeafMaterial} from './materials';
 import './style.css';
-import {NativePlants} from './native-plants';
+import {NativePlants,MODEL_CAPACITY} from './native-plants';
+import {generateFoliage} from './procedural-foliage';
 import {loadGroundTextures,disposeGroundTextures,type GroundTextures} from './ground-textures';
 import {choosePlantView} from './plant-view';
+import {crownGeometry,crownColour} from './crowns';
 
 const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const canvas=el<HTMLCanvasElement>('world'),loading=el('loading'),detail=el('loading-detail');
@@ -30,7 +33,7 @@ const textureLoader=new THREE.TextureLoader();
 const fallbackTiles=new Map<string,THREE.Mesh>();
 let fallbackMaterial:THREE.MeshStandardMaterial,overviewTexture:THREE.Texture,overviewMask:THREE.Texture,landscapeControls:THREE.Texture,terrainRelief:THREE.Texture,groundTextures:GroundTextures;
 const tileStates=new Map<string,{info:TileInfo;mesh:THREE.Mesh;heights:Float32Array;texture:THREE.Texture;mask:THREE.Texture;step:number}>(),pending=new Set<string>(),failedIds=new Set<string>();
-const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,nativePlants:nativePlants.status,get selectedBuilding(){return selectedBuilding;},get fly(){return fly;}};
+const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;}};
 (window as unknown as {__world:typeof debug}).__world=debug;
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}window.addEventListener('resize',resize);resize();
 function setMessage(title:string,message:string,error=false){loading.hidden=false;loading.classList.toggle('error',error);el('loading-title').textContent=title;detail.textContent=message;el('retry').hidden=!error;}
@@ -77,23 +80,28 @@ async function makeFallbackTerrain(){
   }
 }
 function makeBuildings(){const g=buildingGeometry(features.buildings),m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.9,side:THREE.DoubleSide});const walls=new THREE.Mesh(g.walls,m),roofs=new THREE.Mesh(g.roofs,m);walls.name='Building walls';roofs.name='Building roofs';walls.userData.owners=g.wallOwners;roofs.userData.owners=g.roofOwners;buildingsGroup.add(walls,roofs);pickMeshes.push(walls,roofs);}
-function makeRoads(){const m=makeRoadMaterial();roadsGroup.add(new THREE.Mesh(roadsGeometry(features.roads,false),m),new THREE.Mesh(roadsGeometry(features.roads,true),m));}
+function makeRoads(textures:Record<RoadSurface,RoadTextures>){
+  for(const surface of ['track','footpath','road'] as RoadSurface[]){
+    const mesh=new THREE.Mesh(roadGeometry(features.roads,surface,heightAt),makeRoadSurfaceMaterial(surface,textures[surface]));
+    mesh.name=`Roads: ${surface}`;mesh.renderOrder=1;roadsGroup.add(mesh);
+  }
+}
 function makeTrees(){
   const chunks=new Map<string,number[][]>();
   for(const plant of features.trees){
     const key=`${Math.min(9,Math.max(0,Math.floor((plant[0]+5000)/1000)))}-${Math.min(9,Math.max(0,Math.floor((5000-plant[1])/1000)))}`;
     if(!chunks.has(key))chunks.set(key,[]);chunks.get(key)!.push(plant);
   }
-  const fineGeometry=new THREE.IcosahedronGeometry(1,0),farGeometry=new THREE.OctahedronGeometry(1,0);
+  const fineGeometry=crownGeometry(1),midGeometry=crownGeometry(0,.08),farGeometry=crownGeometry(-1,0);
   const trunkGeometry=new THREE.CylinderGeometry(.2,.32,1,4);
   const leafMaterial=makeLeafMaterial(landscapeControls);
   const trunkMaterial=new THREE.MeshStandardMaterial({color:'#6e6550',roughness:1});
-  const object=new THREE.Object3D(),up=new THREE.Vector3(0,1,0),surfaceNormal=new THREE.Vector3();
+  const object=new THREE.Object3D(),up=new THREE.Vector3(0,1,0),surfaceNormal=new THREE.Vector3(),colour=new THREE.Color();
   for(const [key,plants] of chunks){
     const [col,row]=key.split('-').map(Number),cx=-4500+col*1000,north=4500-row*1000;
     const tallCount=plants.filter(t=>t[6]!==1&&t[3]>=4).length;
     const crowns=new THREE.InstancedMesh(fineGeometry,leafMaterial,plants.length);
-    const farCrowns=new THREE.InstancedMesh(farGeometry,leafMaterial,plants.length);
+    const midCrowns=new THREE.InstancedMesh(midGeometry,leafMaterial,plants.length),farCrowns=new THREE.InstancedMesh(farGeometry,leafMaterial,plants.length);
     const trunks=new THREE.InstancedMesh(trunkGeometry,trunkMaterial,tallCount);
     let trunkIndex=0;const trunkIndices=new Int32Array(plants.length).fill(-1);
     plants.forEach((plant,i)=>{
@@ -104,21 +112,22 @@ function makeTrees(){
         const worldZ=-n;
         surfaceNormal.set(heightAt(x-4,worldZ)-heightAt(x+4,worldZ),8,heightAt(x,worldZ-4)-heightAt(x,worldZ+4)).normalize();
         object.quaternion.setFromUnitVectors(up,surfaceNormal);object.rotateY(rotation);
-        const halfHeight=h*.5*surfaceNormal.y;
+        // Very flat clusters read as painted mats; give them a modest dome.
+        const halfHeight=Math.max(h*.5,radius*.18)*surfaceNormal.y;
         object.position.set(x-cx+surfaceNormal.x*halfHeight,z+surfaceNormal.y*halfHeight,-n+north+surfaceNormal.z*halfHeight);
         object.scale.set(radius,halfHeight,radius);
       }else{
         object.position.set(x-cx,z+h*.63,-n+north);object.scale.set(radius,h*.4,radius);
       }
       object.updateMatrix();crowns.setMatrixAt(i,object.matrix);
-      crowns.setColorAt(i,plant[7]!==undefined?new THREE.Color(plant[7]):new THREE.Color().setHSL(.24+(i%7)*.008,.17+(i%5)*.025,.19+(i%9)*.012));
+      crowns.setColorAt(i,crownColour(plant[7],i,colour));
     });
     crowns.name='Vegetation canopy';trunks.name='Vegetation trunks';farCrowns.name='Distant vegetation canopy';
     crowns.instanceMatrix.needsUpdate=true;trunks.instanceMatrix.needsUpdate=true;
-    farCrowns.instanceMatrix=crowns.instanceMatrix;farCrowns.instanceColor=crowns.instanceColor;
-    crowns.computeBoundingSphere();farCrowns.computeBoundingSphere();trunks.computeBoundingSphere();
+    midCrowns.instanceMatrix=farCrowns.instanceMatrix=crowns.instanceMatrix;midCrowns.instanceColor=farCrowns.instanceColor=crowns.instanceColor;midCrowns.name='Mid-range vegetation canopy';
+    crowns.computeBoundingSphere();midCrowns.computeBoundingSphere();farCrowns.computeBoundingSphere();trunks.computeBoundingSphere();
     const near=new THREE.Group();near.add(crowns,trunks);
-    const lod=new THREE.LOD();lod.name=`Vegetation ${key}`;lod.position.set(cx,0,-north);lod.addLevel(near,0);lod.addLevel(farCrowns,1800);vegetationGroup.add(lod);
+    const lod=new THREE.LOD();lod.name=`Vegetation ${key}`;lod.position.set(cx,0,-north);lod.addLevel(near,0);lod.addLevel(midCrowns,650);lod.addLevel(farCrowns,2600);vegetationGroup.add(lod);
     nativePlants.register({plants,crowns,trunks,trunkIndices,cx,north});
   }
 }
@@ -154,11 +163,11 @@ function frame(){if(disposed)return;const elapsed=clock.getDelta(),dt=Math.min(e
   if(fly){move.set(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')),0,Number(keys.has('KeyS')||keys.has('ArrowDown'))-Number(keys.has('KeyW')||keys.has('ArrowUp')));if(move.lengthSq()>0)move.normalize().applyQuaternion(camera.quaternion);move.y+=Number(keys.has('KeyE'))-Number(keys.has('KeyQ'));camera.position.addScaledVector(move,flySpeed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?4:1)*dt);camera.position.x=THREE.MathUtils.clamp(camera.position.x,-7500,7500);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-7500,7500);camera.position.y=THREE.MathUtils.clamp(camera.position.y,Math.max(4,heightAt(camera.position.x,camera.position.z)+4),9500);}else controls.update();
   plantTimer+=elapsed;if(plantTimer>.5){plantTimer=0;nativePlants.update(camera);}
   streamTimer+=elapsed;if(streamTimer>.35){streamTimer=0;stream();}footerTimer+=elapsed;if(footerTimer>.25){footerTimer=0;el('camera-height').textContent=`${Math.round(camera.position.y).toLocaleString()} m elevation`;camera.getWorldDirection(direction);el('north-arrow').style.transform=`rotate(${Math.atan2(direction.x,-direction.z)*180/Math.PI}deg)`;}renderer.render(scene,camera);requestAnimationFrame(frame);}
-async function start(){try{manifest=await get<Manifest>('manifest.json');debug.manifest=manifest;if(manifest.version!==1||manifest.extentMeters!==10000||!manifest.surface)throw new Error('Unsupported world manifest');detail.textContent='Loading measured terrain and generated scenery…';[features,elevation]=await Promise.all([get<Features>(manifest.features),getFloats(manifest.elevation)]);if(elevation.length!==1002001)throw new Error('Unexpected world elevation size');landscapeControls=await textureLoader.loadAsync(`/world/${manifest.surface.landscapeControls}`);landscapeControls.colorSpace=THREE.NoColorSpace;terrainRelief=await textureLoader.loadAsync(`/world/${manifest.surface.terrainRelief}`);terrainRelief.colorSpace=THREE.NoColorSpace;groundTextures=await loadGroundTextures(Math.min(8,renderer.capabilities.getMaxAnisotropy()));await makeFallbackTerrain();makeWater();makeBuildings();makeRoads();makeTrees();fillSources();updateSummary();worldInitialized=true;stream();void nativePlants.load(()=>{
+async function start(){try{manifest=await get<Manifest>('manifest.json');debug.manifest=manifest;if(manifest.version!==1||manifest.extentMeters!==10000||!manifest.surface)throw new Error('Unsupported world manifest');detail.textContent='Loading measured terrain and generated scenery…';[features,elevation]=await Promise.all([get<Features>(manifest.features),getFloats(manifest.elevation)]);if(elevation.length!==1002001)throw new Error('Unexpected world elevation size');landscapeControls=await textureLoader.loadAsync(`/world/${manifest.surface.landscapeControls}`);landscapeControls.colorSpace=THREE.NoColorSpace;terrainRelief=await textureLoader.loadAsync(`/world/${manifest.surface.terrainRelief}`);terrainRelief.colorSpace=THREE.NoColorSpace;const anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());let roadTextures:Record<RoadSurface,RoadTextures>;[groundTextures,roadTextures]=await Promise.all([loadGroundTextures(anisotropy),loadRoadTextures(anisotropy)]);await makeFallbackTerrain();makeWater();makeBuildings();makeRoads(roadTextures);makeTrees();fillSources();updateSummary();worldInitialized=true;stream();void (async()=>{try{nativePlants.addModels(await generateFoliage(MODEL_CAPACITY));}catch(error){console.warn('Procedural foliage unavailable',error);}await nativePlants.load(()=>{
       const p=document.createElement('p');p.id='native-plant-info';
-      p.textContent=nativePlants.status.loaded?'Nearby vegetation uses detailed tree and scrub models within a bounded rendering budget. The cabbage tree is a named species; broadleaf tree and scrub assets are representative foliage, not verified NZ species. Species placement is illustrative, inferred from height and vegetation class; individual species are not identified in the aerial data.':'Detailed native plant assets have not been installed. Vegetation uses approximate generated crowns and scrub.';el('sources').append(p);
-      const surfaceCredit=document.createElement('p'),surfaceLink=document.createElement('a');surfaceLink.href='https://polyhaven.com';surfaceLink.target='_blank';surfaceLink.rel='noopener';surfaceLink.textContent='Ground scans and representative foliage: Powered by Poly Haven · CC0';surfaceCredit.append(surfaceLink);el('sources').append(surfaceCredit);
-      for(const credit of nativePlants.credits){const p=document.createElement('p'),a=document.createElement('a');a.href=credit.source;a.target='_blank';a.rel='noopener';a.textContent=`${credit.species} — ${credit.author} (${credit.license})`;p.append(a);el('sources').append(p);}
+      p.textContent=nativePlants.status.loaded?'Nearby vegetation uses detailed tree and bush models within a bounded rendering budget. The cabbage tree is a named species; other trees and bushes are procedurally generated representative forms (EZ-Tree), not verified NZ species. Low-scrub clusters are filled with several bushes. Species placement is illustrative, inferred from height and vegetation class; individual species are not identified in the aerial data.':'Detailed native plant assets have not been installed. Vegetation uses approximate generated crowns and scrub.';el('sources').append(p);
+      const surfaceCredit=document.createElement('p'),surfaceLink=document.createElement('a');surfaceLink.href='https://polyhaven.com';surfaceLink.target='_blank';surfaceLink.rel='noopener';surfaceLink.textContent='Ground and road scans: Powered by Poly Haven · CC0';surfaceCredit.append(surfaceLink);el('sources').append(surfaceCredit);
+      const credited=new Set<string>();for(const credit of nativePlants.credits){const representative=credit.role==='representative',label=representative?'Representative trees and bushes':credit.species;if(credited.has(label+credit.source))continue;credited.add(label+credit.source);const p=document.createElement('p'),a=document.createElement('a');a.href=credit.source;a.target='_blank';a.rel='noopener';a.textContent=`${label} — ${credit.author} (${credit.license})`;p.append(a);el('sources').append(p);}
       if(nativePlants.status.species.length){const button=document.createElement('button');button.textContent='Native plants';button.id='native-plant-view';button.addEventListener('click',()=>{const view=choosePlantView(nativePlants.previewOptions(),p=>nativePlants.neighbours(p),features.buildings,heightAt,THREE.MathUtils.degToRad(camera.fov),camera.aspect);if(!view)return;setMode(false);closeSelection();document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false');});camera.position.copy(view.position);controls.target.copy(view.target);controls.update();nativePlants.update(camera);});document.querySelector('.views')!.append(button);}
-    });}catch(error){console.error(error);setMessage('Local world data is not ready','Run npm run data in lyttelton-world, then reload. Details: '+(error instanceof Error?error.message:String(error)),true);}}
+    });})();}catch(error){console.error(error);setMessage('Local world data is not ready','Run npm run data in lyttelton-world, then reload. Details: '+(error instanceof Error?error.message:String(error)),true);}}
 window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();

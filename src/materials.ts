@@ -132,30 +132,18 @@ export function setTerrainReference(material:THREE.MeshStandardMaterial,value:bo
   state.referenceMode.value=Number(value);material.map=value?state.reference:null;material.needsUpdate=true;
 }
 
-export function makeRoadMaterial():THREE.MeshStandardMaterial {
-  const m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-2});
-  m.customProgramCacheKey=()=> 'world-road-v1';
-  m.onBeforeCompile=shader=>{
-    shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vRoadPosition;').replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvRoadPosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
-    shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>\nvarying vec3 vRoadPosition;\n${noiseFunctions}`);
-    shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
-      vec2 p=vRoadPosition.xz;
-      float detail=1.0-smoothstep(0.15,1.0,max(length(dFdx(p)),length(dFdy(p))));
-      diffuseColor.rgb*=0.88+0.16*groundNoise(p*0.15)+detail*0.15*(groundNoise(p*12.0)-0.5);
-    `);
-  };
-  return m;
-}
-
 // Clip low scrub to measured vegetation occupancy. Tall crowns may overhang.
+// Crowns are shaded as foliage masses: world-space leaf clumps, darker
+// undersides and interior gaps, instead of flat faceted polygons.
 export function makeLeafMaterial(evidence:THREE.Texture):THREE.MeshStandardMaterial {
-  const material=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:1});
-  material.customProgramCacheKey=()=> 'evidence-scrub-v1';
+  const material=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.92});
+  material.customProgramCacheKey=()=> 'evidence-scrub-v2';
   material.onBeforeCompile=shader=>{
     shader.uniforms.uLandscape={value:evidence};
-    shader.vertexShader=shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vPlantWorld;\nvarying float vLowScrub;');
+    shader.vertexShader=shader.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vPlantWorld;\nvarying float vLowScrub;\nvarying float vCrownY;');
     shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>', `#include <worldpos_vertex>
       vec4 plant=vec4(transformed,1.0);
+      vCrownY=transformed.y;
       #ifdef USE_INSTANCING
         plant=instanceMatrix*plant;
         vLowScrub=step(length(instanceMatrix[1].xyz),1.8);
@@ -164,9 +152,26 @@ export function makeLeafMaterial(evidence:THREE.Texture):THREE.MeshStandardMater
       #endif
       vPlantWorld=(modelMatrix*plant).xyz;
     `);
-    shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nuniform sampler2D uLandscape;\nvarying vec3 vPlantWorld;\nvarying float vLowScrub;');
+    shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>\nuniform sampler2D uLandscape;\nvarying vec3 vPlantWorld;\nvarying float vLowScrub;\nvarying float vCrownY;\n${noiseFunctions}`);
     shader.fragmentShader=shader.fragmentShader.replace('#include <clipping_planes_fragment>',`#include <clipping_planes_fragment>
       if(vLowScrub>0.5 && texture2D(uLandscape,vec2(vPlantWorld.x+5000.0,5000.0-vPlantWorld.z)/10000.0).r<0.3)discard;
+    `);
+    shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+      vec3 leafP=vPlantWorld*vec3(1.0,1.35,1.0);
+      float leafScale=max(length(dFdx(leafP)),length(dFdy(leafP)));
+      float fine=1.0-smoothstep(0.25,1.6,leafScale);
+      float clumps=groundNoise(leafP.xz*0.55+leafP.y*0.7)*0.6+groundNoise(leafP.zx*1.3-leafP.y*1.1)*0.4;
+      float leaves=groundNoise(leafP.xz*4.1+leafP.y*3.3)*0.6+groundNoise(leafP.zx*9.3-leafP.y*7.1)*0.4;
+      float shade=mix(0.6,1.08,smoothstep(-0.95,0.85,vCrownY));
+      diffuseColor.rgb*=shade*(0.84+0.3*clumps)*(1.0+fine*0.5*(leaves-0.5));
+      diffuseColor.rgb*=mix(1.0,0.82,fine*smoothstep(0.62,0.82,1.0-clumps));
+      // Low scrub masses are many small bushes: mottle them at bush scale.
+      float bushes=groundNoise(vPlantWorld.xz*0.75)*0.65+groundNoise(vPlantWorld.zx*1.9+3.1)*0.35;
+      diffuseColor.rgb*=mix(1.0,0.5+0.75*smoothstep(0.25,0.75,bushes),vLowScrub);
+    `);
+    shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_maps>',`#include <normal_fragment_maps>
+      vec2 leafTilt=vec2(groundNoise(vPlantWorld.xz*0.9+vPlantWorld.y),groundNoise(vPlantWorld.zx*0.9-vPlantWorld.y+7.0))-0.5;
+      normal=normalize(normal+vec3(leafTilt,0.0)*0.9);
     `);
   };
   return material;

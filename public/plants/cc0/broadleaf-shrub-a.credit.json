@@ -1,8 +1,0 @@
-{
-  "source": "https://polyhaven.com/a/shrub_02",
-  "license": "CC0-1.0",
-  "id": "broadleaf-shrub-a",
-  "sourceTriangles": 7590,
-  "triangles": 4498,
-  "changes": "Selected source variant; reduced geometry with meshoptimizer, embedded original 1K textures. Representative foliage, not an identification of NZ species."
-}

@@ -49,26 +49,61 @@
       "tileMeters": 2.1399996280670166
     },
     {
-      "id": "tree_small_02",
-      "source": "https://polyhaven.com/a/tree_small_02",
+      "id": "tarred_gravel",
+      "source": "https://polyhaven.com/a/tarred_gravel",
       "authors": {
-        "Rico Cilliers": "All"
+        "Dimitrios Savva": "All"
       },
       "license": "CC0-1.0",
       "files": {
-        "sourceGLTF": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/tree_small_02/tree_small_02_1k.gltf"
-      }
+        "Diffuse": {
+          "path": "materials/tarred_gravel-Diffuse.jpg",
+          "sha256": "7b866b32d73f74f2e493f98828391587aed5b2cd24c47619ce7188b40079e627"
+        },
+        "nor_gl": {
+          "path": "materials/tarred_gravel-nor_gl.jpg",
+          "sha256": "7b88d5d9e36f9f5978ec94b7b0a5b9d419eb43093bb94b001ced8605914931e8"
+        }
+      },
+      "tileMeters": 2.200000047683716
     },
     {
-      "id": "shrub_02",
-      "source": "https://polyhaven.com/a/shrub_02",
+      "id": "asphalt_floor",
+      "source": "https://polyhaven.com/a/asphalt_floor",
       "authors": {
-        "Rico Cilliers": "All"
+        "eye-candy.xyz": "All"
       },
       "license": "CC0-1.0",
       "files": {
-        "sourceGLTF": "https://dl.polyhaven.org/file/ph-assets/Models/gltf/1k/shrub_02/shrub_02_1k.gltf"
-      }
+        "Diffuse": {
+          "path": "materials/asphalt_floor-Diffuse.jpg",
+          "sha256": "3c4b3ff069a45e3af920f179ab8446a24c9c5cba32c563c235301e638e0ffb55"
+        },
+        "nor_gl": {
+          "path": "materials/asphalt_floor-nor_gl.jpg",
+          "sha256": "726c4b2a4777a9f0ed2c7e174da12590dd135f476539dd61b642cb9af923d54f"
+        }
+      },
+      "tileMeters": 2.3499999046325684
+    },
+    {
+      "id": "gravel_road",
+      "source": "https://polyhaven.com/a/gravel_road",
+      "authors": {
+        "Amal Kumar": "All"
+      },
+      "license": "CC0-1.0",
+      "files": {
+        "Diffuse": {
+          "path": "materials/gravel_road-Diffuse.jpg",
+          "sha256": "bccbb077a825bdd0eb6f607939578a6ee549822824278fb3a828f6eed3d05d45"
+        },
+        "nor_gl": {
+          "path": "materials/gravel_road-nor_gl.jpg",
+          "sha256": "0920996cab9f2d62a2eb73a3589804527aa0273c4ca61b9f526ce4cba37edebc"
+        }
+      },
+      "tileMeters": 2.0
     }
   ]
 }

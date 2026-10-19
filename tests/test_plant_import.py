@@ -22,8 +22,3 @@ class PlantImportTests(unittest.TestCase):
         report=inspect_glb(p.read_bytes());self.assertEqual(report['triangles'],85160);self.assertEqual(report['parts'],10)
     def test_invalid_header_rejected(self):
         with self.assertRaises(ValueError):inspect_glb(b'bad')
-    def test_representative_foliage_assets_stay_within_detail_budget(self):
-        root=Path(__file__).resolve().parents[1]
-        for name,limit in [('broadleaf-tree',13000),('broadleaf-shrub-a',5000),('broadleaf-shrub-b',5000)]:
-            report=inspect_glb((root/f'public/plants/cc0/{name}.glb').read_bytes())
-            self.assertGreater(report['triangles'],500);self.assertLessEqual(report['triangles'],limit)

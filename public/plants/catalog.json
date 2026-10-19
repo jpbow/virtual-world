@@ -3,7 +3,7 @@
   "models": [
     {
       "id": "cordyline-australis",
-      "species": "Cordyline australis \u2014 t\u012b k\u014duka / cabbage tree",
+      "species": "Cordyline australis — tī kōuka / cabbage tree",
       "url": "/plants/cc-by/cordyline-australis.glb",
       "author": "PlantCatalog",
       "license": "CC-BY-4.0",
@@ -13,48 +13,6 @@
       "maxHeight": 9.0,
       "density": 0.025,
       "ignoreVertexColors": true
-    },
-    {
-      "id": "broadleaf-tree",
-      "species": "Representative broadleaf tree",
-      "url": "/plants/cc0/broadleaf-tree.glb",
-      "author": "Rico Cilliers",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/tree_small_02",
-      "kind": "tree",
-      "role": "representative",
-      "minHeight": 3.5,
-      "maxHeight": 60,
-      "density": 1,
-      "range": 85
-    },
-    {
-      "id": "broadleaf-shrub-a",
-      "species": "Representative broadleaf scrub",
-      "url": "/plants/cc0/broadleaf-shrub-a.glb",
-      "author": "Rico Cilliers",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/shrub_02",
-      "kind": "shrub",
-      "role": "representative",
-      "minHeight": 0.7,
-      "maxHeight": 3.5,
-      "density": 1,
-      "range": 85
-    },
-    {
-      "id": "broadleaf-shrub-b",
-      "species": "Representative broadleaf scrub",
-      "url": "/plants/cc0/broadleaf-shrub-b.glb",
-      "author": "Rico Cilliers",
-      "license": "CC0-1.0",
-      "source": "https://polyhaven.com/a/shrub_02",
-      "kind": "shrub",
-      "role": "representative",
-      "minHeight": 0.7,
-      "maxHeight": 3.5,
-      "density": 1,
-      "range": 85
     }
   ]
 }

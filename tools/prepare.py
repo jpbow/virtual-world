@@ -354,6 +354,38 @@ def building_roof(poly, dem, dsm, tags):
                    'source':'osm' if h or levels else 'default','error':None}
 
 
+# Carriageway defaults (kerb to kerb, metres). Urban NZ streets are wider than
+# a bare two-lane pavement; mapped sidewalks refine these per road.
+ROAD_WIDTHS={'motorway':11,'trunk':11,'trunk_link':7,'primary':10,'primary_link':7,'secondary':10,'secondary_link':7,
+             'tertiary':9,'tertiary_link':6,'residential':8,'living_street':5,'unclassified':6,'service':3.5,'track':2.5,
+             'footway':1.2,'path':1.2,'steps':1.5,'cycleway':2,'pedestrian':4,'bridleway':1.5}
+VEHICLE_ROADS={'trunk','primary','secondary','tertiary','residential','unclassified','living_street'}
+
+
+def widths_from_sidewalks(roads):
+    """Estimate carriageway width from separately mapped sidewalks.
+
+    Sidewalk centrelines sit beyond the kerb plus half the footpath width; a
+    road whose sidewalks are consistently found on one or both sides takes
+    twice the median offset minus that margin. Roads with an OSM width tag or
+    too little sidewalk evidence keep their width.
+    """
+    vehicle=[r for r in roads if r['kind'] in VEHICLE_ROADS]
+    if not vehicle:return
+    lines=[LineString([(p[0],p[1]) for p in r['points']]) for r in vehicle]
+    tree=STRtree(lines);offsets=[[] for _ in vehicle]
+    for r in roads:
+        if not r.get('sidewalk'):continue
+        for x,y,_ in r['points'][1:-1]:
+            point=Point(x,y);i=int(tree.nearest(point));d=lines[i].distance(point)
+            if 2<d<12:offsets[i].append(d)
+    for road,found in zip(vehicle,offsets):
+        if road['widthSource']!='default' or len(found)<6:continue
+        default=ROAD_WIDTHS.get(road['kind'],6)
+        road['width']=round(float(np.clip(2*np.median(found)-2.2,default*.75,min(16,default*1.6))),2)
+        road['widthSource']='sidewalks'
+
+
 def build_features(elements,dem,dsm,water):
     buildings=[];roads=[];wood=[];seen=set();bridges=0
     # Relation members must not also appear as standalone building footprints.
@@ -382,9 +414,9 @@ def build_features(elements,dem,dsm,water):
             line=LineString(p).intersection(LOCAL_AREA)
             lines=[line] if line.geom_type=='LineString' else list(line.geoms) if line.geom_type=='MultiLineString' else []
             bridge=tags.get('bridge') not in [None,'no'];bridges+=int(bridge)
-            widths={'motorway':11,'trunk':10,'primary':9,'secondary':8,'tertiary':7,'residential':6,'service':3.5,'unclassified':5,'track':2.5,'footway':1.2,'path':1.2,'steps':1.2,'cycleway':2}
-            try:width=min(24,max(0.7,float(tags.get('width',widths.get(tags['highway'],3)))))
-            except ValueError:width=widths.get(tags['highway'],3)
+            try:width=min(24,max(0.7,float(str(tags['width']).replace('m','').strip())));width_source='osm'
+            except (KeyError,ValueError):width=ROAD_WIDTHS.get(tags['highway'],3);width_source='default'
+            if tags.get('footway')=='sidewalk' and width_source=='default':width=1.5
             for l in lines:
                 if l.length<1:continue
                 count=max(2,math.ceil(l.length/5)+1)
@@ -392,10 +424,18 @@ def build_features(elements,dem,dsm,water):
                 z=sample_grid(dem,points[:,0],points[:,1])
                 if np.any(z<-1000):continue
                 if bridge:z=np.linspace(z[0],z[-1],count)+0.5
-                roads.append({'id':e['id'],'name':tags.get('name',''),'kind':tags['highway'],'bridge':bridge,
-                              'width':width,'points':np.round(np.column_stack([points,z+0.25]),2).tolist()})
+                road={'id':e['id'],'name':tags.get('name',''),'kind':tags['highway'],'bridge':bridge,
+                      'width':width,'widthSource':width_source,'points':np.round(np.column_stack([points,z+0.25]),2).tolist()}
+                if tags.get('footway')=='sidewalk':road['sidewalk']=True
+                # Surface and painted crossings guide road materials and markings.
+                if tags.get('surface'):road['surface']=tags['surface']
+                if tags.get('footway')=='crossing' and (tags.get('crossing') in ['zebra','marked','traffic_signals']
+                        or tags.get('crossing:markings') not in [None,'no']):
+                    road['crossing']='zebra' if 'zebra' in [tags.get('crossing'),tags.get('crossing:markings')] else 'lines'
+                roads.append(road)
         if tags.get('natural')=='wood' or tags.get('landuse')=='forest':
             wood.extend(polygons(osm_polygon(e)))
+    widths_from_sidewalks(roads)
     forest=unary_union(wood).intersection(LOCAL_AREA).difference(water)
     exclusions=[Polygon(b['ring']).buffer(5) for b in buildings]
     exclusions += [LineString([(p[0],p[1]) for p in r['points']]).buffer(r['width']/2+3) for r in roads]

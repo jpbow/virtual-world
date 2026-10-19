@@ -84,7 +84,7 @@ test('credited native model replaces nearby proxies and releases them at distanc
     const w=(window as any).__world,models:any[]=[];w.scene.traverse((o:any)=>{if(o.name.startsWith('Native plant:'))models.push(o);});
     return{active:w.nativePlants.active,parts:models.length,instances:models.reduce((a,m)=>a+m.count,0),bounds:models.every(m=>m.boundingSphere?.radius>0),species:w.nativePlants.species,nativeActive:w.nativePlants.nativeActive,triangles:w.nativePlants.triangles,representative:w.nativePlants.representativeModels};
   });
-  expect(result.nativeActive).toBeGreaterThan(0);expect(result.nativeActive).toBeLessThanOrEqual(48);expect(result.instances).toBe(result.nativeActive*10);expect(result.representative).toBe(3);expect(result.triangles).toBeLessThanOrEqual(4_000_000);expect(result.parts).toBe(10);expect(result.active).toBeGreaterThan(0);expect(result.active).toBeLessThanOrEqual(512);expect(result.instances).toBeGreaterThan(0);expect(result.bounds).toBe(true);
+  expect(result.nativeActive).toBeGreaterThan(0);expect(result.nativeActive).toBeLessThanOrEqual(48);expect(result.instances).toBe(result.nativeActive*10);expect(result.representative).toBe(10);expect(result.triangles).toBeLessThanOrEqual(6_000_000);expect(result.parts).toBe(10);expect(result.active).toBeGreaterThan(0);expect(result.active).toBeLessThanOrEqual(2000);expect(result.instances).toBeGreaterThan(0);expect(result.bounds).toBe(true);
   await page.screenshot({path:'.impeccable/review/native-plants.png'});
   await page.setViewportSize({width:390,height:844});await page.locator('#panel-toggle').click();await page.screenshot({path:'.impeccable/review/native-plants-mobile.png'});await page.setViewportSize({width:1440,height:1000});await page.locator('#panel-toggle').click();
   await page.locator('#sources-toggle').click();await expect(page.locator('#sources')).toContainText('PlantCatalog (CC-BY-4.0)');await expect(page.locator('#native-plant-info')).toContainText('Species placement is illustrative');
@@ -93,18 +93,19 @@ test('credited native model replaces nearby proxies and releases them at distanc
   expect(errors).toEqual([]);
 });
 
-test('missing native asset preserves generated vegetation and navigation',async({page})=>{
+test('missing plant assets preserve generated vegetation and navigation',async({page})=>{
   await page.route('**/plants/**/*.glb',route=>route.fulfill({status:404,body:'Missing'}));
+  await page.route('**/*ez-tree*',route=>route.fulfill({status:404,body:'Missing'}));
   await page.goto('/');await page.waitForFunction(()=>Boolean((window as any).__world?.ready));
   await page.waitForFunction(()=>(window as any).__world.nativePlants.state==='unavailable');
   await expect(page.locator('#native-plant-view')).toHaveCount(0);await expect(page.locator('#retry')).toBeHidden();
   expect(await page.evaluate(()=>(window as any).__world.nativePlants.active)).toBe(0);
 });
 
-test('representative foliage survives a missing named species without an empty shortcut',async({page})=>{
+test('procedural foliage survives a missing named species without an empty shortcut',async({page})=>{
   await page.route('**/plants/cc-by/*.glb',route=>route.fulfill({status:404,body:'Missing'}));
   await page.goto('/');await page.waitForFunction(()=>Boolean((window as any).__world?.ready));
   await page.waitForFunction(()=>(window as any).__world.nativePlants.state==='ready');
-  expect(await page.evaluate(()=>(window as any).__world.nativePlants.representativeModels)).toBe(3);
+  expect(await page.evaluate(()=>(window as any).__world.nativePlants.representativeModels)).toBe(10);
   await expect(page.locator('#native-plant-view')).toHaveCount(0);await expect(page.locator('#retry')).toBeHidden();
 });

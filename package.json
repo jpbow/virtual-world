@@ -14,16 +14,15 @@
     "compare": "node tools/compare.mjs",
     "hillshade": ".venv/bin/python tools/hillshade.py",
     "plant:install": ".venv/bin/python tools/install_plant.py",
-    "assets:fetch": ".venv/bin/python tools/fetch_surface_assets.py",
-    "assets:foliage": "node tools/prepare_foliage.mjs"
+    "assets:fetch": ".venv/bin/python tools/fetch_surface_assets.py"
   },
   "dependencies": {
+    "@dgreenheck/ez-tree": "^1.1.0",
     "three": "^0.180.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",
     "@types/three": "^0.180.0",
-    "meshoptimizer": "^1.3.0",
     "typescript": "^5.9.0",
     "vite": "^7.1.0"
   }
