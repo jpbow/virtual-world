@@ -24,6 +24,14 @@ ROOT=Path(__file__).resolve().parents[1]
 CLASS_NAMES=['grass','rock','soil','paving','canopy','water']
 
 
+def box_count(mask,radius):
+    """Count true cells in each (2r+1)² window; edges count only real cells."""
+    size=2*radius+1
+    total=np.zeros((mask.shape[0]+size,mask.shape[1]+size),dtype='int32')
+    total[1:,1:]=np.pad(mask,radius).astype('int32').cumsum(0).cumsum(1)
+    return total[size:,size:]-total[:-size,size:]-total[size:,:-size]+total[:-size,:-size]
+
+
 def classify(rgb,ground,canopy,buildings,roads,urban,water,woodland=None):
     """Return labels at 2 m. Mapped geometry overrides ambiguous RGB evidence."""
     r,g,b=[rgb[i].astype('float32')/255 for i in range(3)]
@@ -41,9 +49,32 @@ def classify(rgb,ground,canopy,buildings,roads,urban,water,woodland=None):
     labels[rock]=1
     soil=(r>g*1.12)&(g>b*1.12)&(brightness>.15)&(slope<.9)
     labels[soil]=2
+    # Concrete and asphalt keep blue close to red/green in this survey; lawns,
+    # dry grass and gardens are blue-deficient, and cast shadows are blue-green.
+    # Only neutral grey counts as hard surface. Lone grey pixels inside
+    # gardens (sheds, paths, bins) stay grass unless neighbours support them.
+    neutral=((r+g)*.5<b*1.10)&(g<r*1.12)&(chroma<.16)
     hardstanding_context=urban|((slope<.15)&(brightness>.22))
-    paving=hardstanding_context&(~green)&(chroma<.16)&(brightness>.13)&(canopy<2.5)&(slope<.65)
-    labels[paving]=3
+    open_ground=valid&~buildings&~roads&~water&(canopy<2.5)
+    hard=open_ground&hardstanding_context&neutral&(~green)&(brightness>.13)&(slope<.65)
+    hard&=box_count(hard|roads,1)>=4
+    # Shadows are not evidence of a surface. They follow the lit ground
+    # around them: hardstand shadows stay paving, garden shadows stay grass.
+    # Inside extensive hardstand, tinted gravel, log yards and stains are
+    # paving too, as are raised non-green objects such as log stacks and
+    # containers; the same tints among gardens remain grass.
+    shadow=open_ground&(brightness<.26)&~green&~neutral&(slope<.65)&hardstanding_context
+    lit=open_ground&~shadow
+    paved_share=box_count(hard,6)/np.maximum(box_count(lit,6),1)
+    infill=valid&~buildings&~roads&~water&hardstanding_context&~green&(slope<.65)&(paved_share>.6)
+    hard|=(shadow&(paved_share>.5))|infill
+    labels[hard]=3
+    # Roofs hide the ground and must never be classified from their own
+    # photograph. Footprints take the surrounding ground class so that
+    # distance mip levels match the gardens or hardstand around them; the
+    # interiors of large sheds, with no ground nearby, stay paving.
+    ground_near=box_count(lit,8)
+    labels[buildings]=np.where(box_count(hard&lit,8)[buildings]*2>=ground_near[buildings],3,0)
     # Preserve shaded/desaturated crowns connected to strong green evidence,
     # and trust mapped woodland where colour alone loses dark foliage.
     near_green=np.array(Image.fromarray(green.astype('uint8')*255).filter(ImageFilter.MaxFilter(7)))>0
@@ -51,8 +82,6 @@ def classify(rgb,ground,canopy,buildings,roads,urban,water,woodland=None):
     woodland=np.zeros_like(green) if woodland is None else woodland
     vegetation=(green|woodland|(near_green&compatible))&(canopy>.7)&(canopy<60)&valid&~buildings&~roads&~water
     labels[vegetation]=4
-    # A roof's photograph must never be painted on the ground below it.
-    labels[buildings]=3
     labels[roads]=3
     labels[water]=5
     return labels,vegetation
@@ -152,7 +181,9 @@ def prepare_surfaces():
     labels,vegetation=classify(rgb,ground,canopy,building_mask,road_mask,urban,water,woodland)
     counts=np.bincount(labels.ravel(),minlength=6)
     from landscape_evidence import landscape_controls
-    Image.fromarray(landscape_controls(rgb,labels,ground)).save(out/'landscape-controls.png',optimize=True)
+    # Gardens: ground within 30 m of a building (town sections, farmhouse lawns).
+    gardens=burn([p.buffer(30) for p in polys])
+    Image.fromarray(landscape_controls(rgb,labels,ground,gardens=gardens)).save(out/'landscape-controls.png',optimize=True)
     # Three stored weights plus implicit paving weight (1 - sum RGB). Canopy gets grass/forest litter below
     # independently instantiated trees. Water geometry covers its ground.
     weights=np.zeros((5000,5000,3),dtype='uint8')
@@ -225,8 +256,8 @@ def prepare_surfaces():
     manifest['stats']['trees']=len(trees)
     from vegetation_coverage import measure
     manifest['surface']['coverage']=measure(features,labels[2::5,2::5],terrain=grid)
-    manifest['approximations']=[a for a in manifest['approximations'] if not a.startswith(('Tree positions','Tree locations'))]
-    manifest['approximations'] += ['Ground classes use RGB/height heuristics and OSM masks; colours, shadows and survey-date differences can cause classification errors.',
+    manifest['approximations']=[a for a in manifest['approximations'] if not a.startswith(('Tree positions','Tree locations','Ground classes'))]
+    manifest['approximations'] += ['Ground classes use RGB/height heuristics and OSM masks. Paving needs neutral grey imagery; shadows and ground under roofs take the surrounding class. Narrow driveways, tinted gravel and survey-date differences can still be misclassified.',
           'Generated ground materials contain no aerial RGB. Grass, rock, soil and paving are procedural material families.',
           'Vegetation instances combine measured canopy peaks with coverage fill and low-scrub clusters. Mapped woodland supports shaded foliage; species and crown widths remain approximate.',
           'Ground vegetation condition and canopy occupancy are categorical image estimates. DEM horizons shade terrain, and optional LINZ hillshade contributes only local fine-relief lighting; the terrain mesh remains 10 m at its finest level.',

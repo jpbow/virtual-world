@@ -1,7 +1,8 @@
 import {test,expect} from '@playwright/test';
 test('real scenery, layers, navigation, building inspection and desktop capture',async({page})=>{
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
-  const external:string[]=[];page.on('request',r=>{if(!r.url().startsWith('http://127.0.0.1:5173')&&!r.url().startsWith('blob:http://127.0.0.1:5173')&&!r.url().startsWith('data:'))external.push(r.url());});
+  // Only the optional live aerial reference may leave the machine.
+  const external:string[]=[];page.on('request',r=>{if(!r.url().startsWith('http://127.0.0.1:5173')&&!r.url().startsWith('blob:http://127.0.0.1:5173')&&!r.url().startsWith('data:')&&!r.url().startsWith('https://basemaps.linz.govt.nz/v1/tiles/aerial/'))external.push(r.url());});
   await page.goto('/');
   await page.waitForFunction(()=>Boolean((window as any).__world?.ready));
   await page.waitForFunction(()=>(window as any).__world.tiles.size===100,{},{timeout:120000});

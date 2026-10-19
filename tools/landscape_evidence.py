@@ -25,17 +25,29 @@ def terrain_visibility(ground,spacing=20,sun=(-5000,8000,4000)):
     sunlight=np.clip((sun_slope-horizon)*12+.5,0,1)
     return openness,sunlight
 
-def landscape_controls(rgb,labels,ground,size=2000):
+def landscape_controls(rgb,labels,ground,size=2000,gardens=None):
     """RGBA = canopy occupancy, grass condition, sky openness, sun visibility.
+
+    Grass condition: 0 dry pasture, 128 green growing pasture, 255 garden lawn.
 
     The first two channels are categorical; the last two derive only from DEM.
     No photographic colour or photograph-shaped lighting survives.
     """
     r,g,b=rgb.astype('float32')
-    growing=(g>r*1.08)&(g>b*1.14)&((2*g-r-b)>15)&(labels==0)
+    strong=(g>r*1.08)&(g>b*1.14)&((2*g-r-b)>15)
+    growing=strong&(labels==0)
+    lawn=np.zeros_like(growing)
+    if gardens is not None:
+        # Grass around houses is mown garden lawn, not dry pasture, unless
+        # the photograph is clearly brown. Shade and survey season make many
+        # lawns read olive or grey, so greenness alone misses them.
+        dry=(r>g*1.12)&(r>b*1.3)
+        # Garden trees and shrubs stand over lawn too, not forest litter.
+        lawn=gardens&((labels==0)|(labels==4))&~dry
     channels=[]
-    for a in [labels==4,growing]:
-        channels.append(np.array(Image.fromarray(a.astype('uint8')*255).resize((size,size),Image.Resampling.BOX)))
+    condition=np.where(lawn,255,np.where(growing,128,0)).astype('uint8')
+    for a in [(labels==4).astype('uint8')*255,condition]:
+        channels.append(np.array(Image.fromarray(a).resize((size,size),Image.Resampling.BOX)))
     sky,sun=terrain_visibility(ground[5::10,5::10],20)
     for a in [sky,sun]:
         channels.append(np.array(Image.fromarray(np.round(a*255).astype('uint8')).resize((size,size),Image.Resampling.BILINEAR)))

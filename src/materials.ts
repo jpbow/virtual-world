@@ -30,12 +30,12 @@ export function makeTerrainMaterial(mask:THREE.Texture,reference:THREE.Texture,r
   const state:TerrainState={reference,mask,referenceMode:{value:Number(referenceMode)}};
   const material=new THREE.MeshStandardMaterial({map:referenceMode?reference:null,roughness:1,side:THREE.DoubleSide,wireframe});
   material.userData.terrainState=state;
-  material.customProgramCacheKey=()=>`world-ground-v3-${overview?'overview':'tile'}`;
+  material.customProgramCacheKey=()=>`world-ground-v4-${overview?'overview':'tile'}`;
   material.onBeforeCompile=shader=>{
-    for(const [name,set] of Object.entries(ground)){
-      const prefix=name==='grass'?'uGrass':'uForest';
+    for(const [prefix,set] of [['uGrass',ground.grass],['uForest',ground.forest],['uLawn',ground.lawn]] as const){
       shader.uniforms[prefix+'Scan']={value:set.color};shader.uniforms[prefix+'Normal']={value:set.normal};shader.uniforms[prefix+'Rough']={value:set.roughness};
     }
+    shader.uniforms.uLushScan={value:ground.lush};
     shader.uniforms.uRelief={value:relief};shader.uniforms.uLandscape={value:evidence};shader.uniforms.uSurfaceMap={value:mask};shader.uniforms.uReferenceMode=state.referenceMode;
     shader.uniforms.uSurfaceScale={value:overview?1:500/502};shader.uniforms.uSurfaceOffset={value:overview?0:1/502};
     shader.uniforms.uGrassA={value:new THREE.Color('#71765b')};shader.uniforms.uGrassB={value:new THREE.Color('#99977b')};
@@ -44,18 +44,18 @@ export function makeTerrainMaterial(mask:THREE.Texture,reference:THREE.Texture,r
     shader.vertexShader=shader.vertexShader.replace('#include <worldpos_vertex>','#include <worldpos_vertex>\nvGroundUv=uv;\nvGroundPosition=(modelMatrix*vec4(transformed,1.0)).xyz;');
     shader.fragmentShader=shader.fragmentShader.replace('#include <common>',`#include <common>
       uniform sampler2D uSurfaceMap,uLandscape,uRelief;
-      uniform sampler2D uGrassScan,uGrassNormal,uGrassRough,uForestScan,uForestNormal,uForestRough;
+      uniform sampler2D uGrassScan,uGrassNormal,uGrassRough,uForestScan,uForestNormal,uForestRough,uLawnScan,uLawnNormal,uLawnRough,uLushScan;
       uniform float uReferenceMode,uSurfaceScale,uSurfaceOffset;
       uniform vec3 uGrassA,uGrassB,uRock,uSoil,uPaving;
       varying vec2 vGroundUv;
       varying vec3 vGroundPosition;
-      float groundRelief,groundDetail,forestMix,scanWeight;
-      vec2 grassUv,forestUv;
+      float groundRelief,groundDetail,forestMix,lawnMix,scanWeight;
+      vec2 grassUv,forestUv,lawnUv,lawnUv2;
       ${noiseFunctions}`);
     shader.fragmentShader=shader.fragmentShader.replace('#include <map_fragment>',/* glsl */`
       if(uReferenceMode>0.5) {
         #include <map_fragment>
-        groundRelief=0.0;groundDetail=0.0;scanWeight=0.0;forestMix=0.0;
+        groundRelief=0.0;groundDetail=0.0;scanWeight=0.0;forestMix=0.0;lawnMix=0.0;
       } else {
         vec2 p=vGroundPosition.xz;
         vec3 stored=texture2D(uSurfaceMap,vGroundUv*uSurfaceScale+uSurfaceOffset).rgb;
@@ -69,16 +69,27 @@ export function makeTerrainMaterial(mask:THREE.Texture,reference:THREE.Texture,r
         float blades=mix(0.5,groundNoise(p*vec2(11.0,2.6)+groundNoise(p*0.4)),closeDetail);
         vec4 evidence=texture2D(uLandscape,vec2(p.x+5000.0,5000.0-p.y)/10000.0);
         vec3 grass=mix(uGrassA,uGrassB,smoothstep(0.22,0.78,macro))*(0.82+0.28*middle+0.16*(blades-0.5));
-        grass=mix(grass,vec3(0.15,0.20,0.09)*(0.9+0.2*middle),evidence.g*0.65);
+        // Grass condition: ~0.5 green pasture keeps a darker tint; ~1.0 is
+        // garden lawn, which uses mown-turf scans instead of dry pasture.
+        lawnMix=smoothstep(0.6,0.92,evidence.g);
+        grass=mix(grass,vec3(0.15,0.20,0.09)*(0.9+0.2*middle),smoothstep(0.1,0.5,evidence.g)*(1.0-lawnMix)*0.65);
+        float lushness=smoothstep(0.35,0.75,groundFbm(p*0.045+3.7));
+        vec3 lawnFar=mix(vec3(0.115,0.15,0.032),vec3(0.06,0.1,0.02),lushness*0.6);
+        grass=mix(grass,lawnFar*(0.86+0.26*middle),lawnMix*0.85);
         grass=mix(grass,vec3(0.075,0.095,0.055),evidence.r*0.7);
         float fractures=smoothstep(0.40,0.49,abs(groundNoise(p*0.65)-0.5));
         vec3 rock=uRock*(0.72+0.45*groundFbm(p*1.7)+0.12*grain-0.12*fractures);
         vec3 soil=uSoil*(0.74+0.44*middle+0.16*grain);
         vec3 paving=uPaving*(0.89+0.15*groundNoise(p*0.12)+0.13*(grain-0.5));
         groundDetail=1.0-smoothstep(65.0,220.0,length(vViewPosition));
-        forestMix=smoothstep(0.08,0.85,evidence.r);
+        // Under garden trees the floor is mostly shaded lawn; elsewhere leaf litter.
+        forestMix=smoothstep(0.08,0.85,evidence.r)*(1.0-0.65*lawnMix);
         grassUv=p/2.51;forestUv=p/2.14;
-        vec3 grassScan=texture2D(uGrassScan,grassUv).rgb;
+        // Two rotated scales hide the 1.4 m repeat of the lawn scans.
+        lawnUv=p/1.4;lawnUv2=mat2(0.8,-0.6,0.6,0.8)*p/3.1;
+        vec3 lawnScan=mix(texture2D(uLawnScan,lawnUv).rgb,texture2D(uLawnScan,lawnUv2).rgb,0.4);
+        lawnScan=mix(lawnScan,texture2D(uLushScan,lawnUv2*1.3).rgb,lushness*0.65);
+        vec3 grassScan=mix(texture2D(uGrassScan,grassUv).rgb,lawnScan,lawnMix);
         vec3 litterScan=texture2D(uForestScan,forestUv).rgb;
         litterScan=mix(vec3(dot(litterScan,vec3(0.2126,0.7152,0.0722))),litterScan,0.5)*0.66;
         vec3 scanned=mix(grassScan,litterScan,forestMix);
@@ -100,7 +111,7 @@ export function makeTerrainMaterial(mask:THREE.Texture,reference:THREE.Texture,r
     `);
     shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>',`#include <roughnessmap_fragment>
       if(uReferenceMode<0.5){
-        float scannedRough=mix(texture2D(uGrassRough,grassUv).r,texture2D(uForestRough,forestUv).r,forestMix);
+        float scannedRough=mix(mix(texture2D(uGrassRough,grassUv).r,texture2D(uLawnRough,lawnUv).r,lawnMix),texture2D(uForestRough,forestUv).r,forestMix);
         roughnessFactor=mix(roughnessFactor,max(0.7,scannedRough),groundDetail*scanWeight);
       }
     `);
@@ -112,7 +123,7 @@ export function makeTerrainMaterial(mask:THREE.Texture,reference:THREE.Texture,r
         float determinant=dot(sx,rx);
         vec3 gradient=sign(determinant)*(dFdx(groundRelief)*rx+dFdy(groundRelief)*ry);
         normal=normalize(max(abs(determinant),0.00000001)*normal-gradient);
-        vec3 grassN=texture2D(uGrassNormal,grassUv).xyz*2.0-1.0;
+        vec3 grassN=mix(texture2D(uGrassNormal,grassUv).xyz,texture2D(uLawnNormal,lawnUv).xyz,lawnMix)*2.0-1.0;
         vec3 forestN=texture2D(uForestNormal,forestUv).xyz*2.0-1.0;
         vec3 mapN=normalize(mix(grassN,forestN,forestMix));
         mapN.xy*=groundDetail*scanWeight*0.75;

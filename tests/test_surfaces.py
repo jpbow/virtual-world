@@ -27,6 +27,24 @@ class ClassificationTests(unittest.TestCase):
     def test_neutral_urban_ground_becomes_paving(self):
         self.rgb[:]=100;self.urban[:]=True
         labels,_=self.classify();self.assertTrue((labels==3).all())
+    def test_dry_lawn_and_garden_shadow_in_town_stay_grass(self):
+        # Straw-coloured lawn: blue-deficient, so not hard surface.
+        self.rgb[:]=np.array([118,112,82],dtype='uint8')[:,None,None];self.urban[:]=True
+        self.rgb[:,2:4,2:4]=np.array([40,54,50],dtype='uint8')[:,None,None]
+        labels,_=self.classify();self.assertTrue((labels==0).all())
+    def test_isolated_grey_pixel_in_garden_stays_grass(self):
+        self.urban[:]=True;self.rgb[:,4,4]=110
+        labels,_=self.classify();self.assertTrue((labels==0).all())
+    def test_shadow_and_tinted_gravel_in_hardstand_become_paving(self):
+        self.rgb[:]=120;self.urban[:]=True
+        self.rgb[:,2:4,2:4]=np.array([40,54,50],dtype='uint8')[:,None,None]
+        self.rgb[:,5,5]=np.array([120,100,80],dtype='uint8')
+        labels,_=self.classify();self.assertTrue((labels==3).all())
+    def test_roof_footprints_take_surrounding_ground_class(self):
+        self.urban[:]=True;self.buildings[3:5,3:5]=True;self.rgb[:,3:5,3:5]=180
+        labels,_=self.classify();self.assertTrue((labels==0).all())
+        self.rgb[:]=120;self.rgb[:,3:5,3:5]=np.array([150,40,30],dtype='uint8')[:,None,None]
+        labels,_=self.classify();self.assertTrue((labels==3).all())
     def test_flat_neutral_hardstanding_is_detected_outside_mapped_roads(self):
         self.rgb[:]=130
         labels,_=self.classify();self.assertTrue((labels==3).all())

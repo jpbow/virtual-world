@@ -529,7 +529,7 @@ def write_world(dem_path,dsm_path,imagery_path,osm):
                        'roofSources':roof_counts,'fittedGables':sum(b['roof']['kind']=='gable' for b in features['buildings'])},
               'approximations':['Building facades are untextured procedural walls.','Roof fits use a 2 m resampling of the 1 m DSM; unsupported forms use measured flat roofs.',
                  'Tree positions are deterministic samples inside OSM woodland; heights use DSM where supported.',
-                 'Road widths without OSM measurements use class defaults. Bridges use endpoint interpolation; tunnels are omitted.',
+                 'Road widths without OSM width tags come from mapped sidewalks or class defaults. Bridges use endpoint interpolation; tunnels are omitted.',
                  'Water is a flat coastline-constrained surface at 0 m NZVD2016, not a tide model.']}
     (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2,allow_nan=False))
     log('Ready:',json.dumps(manifest['stats']))

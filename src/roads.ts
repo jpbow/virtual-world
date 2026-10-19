@@ -75,7 +75,9 @@ export function roadGeometry(roads:Road[],surface:RoadSurface,heightAt:(x:number
   const tile=SURFACES[surface].tile;
   for(const road of selected){
     // Painted crossings are drawn as a 3 m band over the carriageway.
-    const width=road.crossing?3:road.width,p=road.points,half=width/2,rank=priority(road);
+    const width=road.crossing?3:road.width,half=width/2,rank=priority(road);
+    // Draped ribbons follow the terrain every 2.5 m; bridges keep their deck.
+    const p=road.bridge?road.points:densify(road.points,2.5);
     const marking=road.crossing?(road.crossing==='zebra'?3:4):surface!=='road'||width<5.5?0:EDGE_LINES.has(road.kind)?2:CENTRE_LINE.has(road.kind)?1:0;
     const [startCut,endCut]=cuts.get(road)??[0,0];
     let length=0;for(let i=1;i<p.length;i++)length+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);
@@ -93,8 +95,8 @@ export function roadGeometry(roads:Road[],surface:RoadSurface,heightAt:(x:number
       const nx=-ty*half*miter,ny=tx*half*miter;
       for(const side of [-1,0,1]){
         const x=p[i][0]+nx*side,north=p[i][1]+ny*side;
-        // Drape each cross-section point; bridges keep their interpolated deck.
-        const y=road.bridge?p[i][2]:Math.max(heightAt(x,-north),side===0?p[i][2]-.3:-Infinity)+.18;
+        // Drape onto the displayed terrain triangles; bridges keep their deck.
+        const y=road.bridge?p[i][2]:heightAt(x,-north)+.12;
         position.push(x,y,-north);
         uv.push(side*half*miter/tile,distance/tile);
         mark.push(side*half,distance,width,length);
@@ -166,4 +168,13 @@ export function makeRoadSurfaceMaterial(surface:RoadSurface,textures:RoadTexture
         diffuseColor.rgb=mix(diffuseColor.rgb,vec3(0.86,0.86,0.82),clamp(max(max(centre,edges)*marked,zebra)*visible,0.0,1.0)*0.92);`);
   };
   return material;
+}
+
+function densify(points:number[][],spacing:number):number[][] {
+  const out=[points[0]];
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],b=points[i],steps=Math.ceil(Math.hypot(b[0]-a[0],b[1]-a[1])/spacing);
+    for(let k=1;k<=steps;k++){const t=k/steps;out.push([a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t]);}
+  }
+  return out;
 }

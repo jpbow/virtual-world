@@ -104,6 +104,48 @@
         }
       },
       "tileMeters": 2.0
+    },
+    {
+      "id": "Grass004",
+      "source": "https://ambientcg.com/view?id=Grass004",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license": "CC0-1.0",
+      "credit": "ambientCG.com",
+      "archiveSha256": "4b63495f459db8481f4d5144e4e9069345c81cf898cc71f2216f5dd3bb344469",
+      "files": {
+        "Diffuse": {
+          "path": "materials/grass004-Diffuse.jpg",
+          "sha256": "9e1c60da44b34a9738b1256ba827541f097dc583521b1d281e61b5f4b4217bc5"
+        },
+        "nor_gl": {
+          "path": "materials/grass004-nor_gl.jpg",
+          "sha256": "8014a81d896a5c589b60612a769bc39eb1213e48d96f6146f485ea36e9e9610f"
+        },
+        "Rough": {
+          "path": "materials/grass004-Rough.jpg",
+          "sha256": "706580983860f942e141acdd68c4128dd683be50fcc5d85b7c67a9a3a8c7bac0"
+        }
+      },
+      "tileMeters": 1.4
+    },
+    {
+      "id": "Grass001",
+      "source": "https://ambientcg.com/view?id=Grass001",
+      "authors": {
+        "ambientCG (Lennart Demes)": "All"
+      },
+      "license": "CC0-1.0",
+      "credit": "ambientCG.com",
+      "archiveSha256": "902f447a64171c8099589642d5bf2d1d6e52c40e94d957eb78eae722084b0cfb",
+      "files": {
+        "Diffuse": {
+          "path": "materials/grass001-Diffuse.jpg",
+          "sha256": "b9b6d61bc3b6137b868a3447eef18737896acd26d58fe2f4b83ce8c0e9d3f8ad"
+        }
+      },
+      "tileMeters": 1.4
     }
   ]
 }

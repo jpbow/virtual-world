@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Cache CC0 Poly Haven ground and road surface scans; no runtime API dependency."""
+"""Cache CC0 Poly Haven and ambientCG ground and road scans; no runtime API dependency."""
 import hashlib,json
 from pathlib import Path
 import requests
@@ -27,4 +27,22 @@ for slug,channels in SURFACES.items():
         meta=files[channel]['1k']['jpg'];path=OUT/f'{slug}-{channel}.jpg';fetch(meta,path);entry['files'][channel]={'path':str(path.relative_to(ROOT/'public')),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
     entry['tileMeters']=info['dimensions'][0]/1000
     report['assets'].append(entry);print('Prepared',slug,flush=True)
+
+# Poly Haven has no mown-lawn scan; ambientCG (also CC0) has photoscanned turf.
+# Zips are cached and only the colour, OpenGL normal and roughness maps are kept.
+import io,zipfile
+# Grass004 is the main lawn; Grass001 only varies its colour.
+MAPS={'Diffuse':'Color','nor_gl':'NormalGL','Rough':'Roughness'}
+LAWNS={'Grass004':(1.4,['Diffuse','nor_gl','Rough']),'Grass001':(1.4,['Diffuse'])}
+for asset,(tile,channels) in LAWNS.items():
+    archive=CACHE/f'{asset}_1K-JPG.zip'
+    if not archive.exists():
+        r=s.get(f'https://ambientcg.com/get?file={asset}_1K-JPG.zip',timeout=120);r.raise_for_status();archive.write_bytes(r.content)
+    entry={'id':asset,'source':f'https://ambientcg.com/view?id={asset}','authors':{'ambientCG (Lennart Demes)':'All'},
+           'license':'CC0-1.0','credit':'ambientCG.com','archiveSha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'files':{},'tileMeters':tile}
+    with zipfile.ZipFile(io.BytesIO(archive.read_bytes())) as z:
+        for channel in channels:
+            path=OUT/f'{asset.lower()}-{channel}.jpg';path.write_bytes(z.read(f'{asset}_1K-JPG_{MAPS[channel]}.jpg'))
+            entry['files'][channel]={'path':str(path.relative_to(ROOT/'public')),'sha256':hashlib.sha256(path.read_bytes()).hexdigest()}
+    report['assets'].append(entry);print('Prepared',asset,flush=True)
 (OUT/'sources.json').write_text(json.dumps(report,indent=2)+'\n')

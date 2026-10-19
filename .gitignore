@@ -9,3 +9,7 @@ test-results/
 playwright-report/
 reports/comparison/
 public/plants/imported/
+
+# Local secrets, e.g. VITE_LINZ_BASEMAPS_KEY
+.env.local
+.env.*.local
