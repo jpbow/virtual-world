@@ -12,6 +12,7 @@ import {choosePlantView} from './plant-view';
 import {crownGeometry,crownColour} from './crowns';
 import {BasemapTiles} from './basemap-tiles';
 import {loadStreetBuildings,type StreetBuildings} from './street-buildings';
+import {loadStreetKit,type StreetKit} from './street-kit';
 
 const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const canvas=el<HTMLCanvasElement>('world'),loading=el('loading'),detail=el('loading-detail');
@@ -25,7 +26,7 @@ const controls=new OrbitControls(camera,canvas);controls.target.set(-200,100,-10
 scene.add(new THREE.HemisphereLight('#f3f5eb','#8b9a82',2));const sun=new THREE.DirectionalLight('#fff2d2',2.1);sun.position.set(-5000,8000,-4000);scene.add(sun);
 const buildingsGroup=new THREE.Group(),roadsGroup=new THREE.Group(),vegetationGroup=new THREE.Group(),terrainGroup=new THREE.Group();scene.add(buildingsGroup,roadsGroup,vegetationGroup,terrainGroup);
 const nativePlants=new NativePlants(heightAt);vegetationGroup.add(nativePlants.group);
-let basemap:BasemapTiles|null=null,streetBuildings:StreetBuildings|null=null;
+let basemap:BasemapTiles|null=null,streetBuildings:StreetBuildings|null=null,streetKit:StreetKit|null=null;
 const pickMeshes:THREE.Mesh[]=[];
 let manifest:Manifest,features:Features,elevation:Float32Array;
 let imagery=false,wireframe=false,fly=false,flySpeed=100,loaded=0,activeLoads=0,failedTiles=0,disposed=false,worldInitialized=false;
@@ -36,7 +37,7 @@ const textureLoader=new THREE.TextureLoader();
 const fallbackTiles=new Map<string,THREE.Mesh>();
 let fallbackMaterial:THREE.MeshStandardMaterial,overviewTexture:THREE.Texture,overviewMask:THREE.Texture,landscapeControls:THREE.Texture,terrainRelief:THREE.Texture,groundTextures:GroundTextures;
 const tileStates=new Map<string,{info:TileInfo;mesh:THREE.Mesh;heights:Float32Array;texture:THREE.Texture;mask:THREE.Texture;step:number}>(),pending=new Set<string>(),failedIds=new Set<string>();
-const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get basemap(){return basemap?.status;},updateBasemap:()=>updateBasemap(),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;},get streetBuildings(){return streetBuildings?[...streetBuildings.models.keys()]:null;}};
+const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get basemap(){return basemap?.status;},updateBasemap:()=>updateBasemap(),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;},get streetBuildings(){return streetBuildings?[...streetBuildings.models.keys()]:null;},get streetKit(){return streetKit?.models??null;}};
 (window as unknown as {__world:typeof debug}).__world=debug;
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}window.addEventListener('resize',resize);resize();
 function setMessage(title:string,message:string,error=false){loading.hidden=false;loading.classList.toggle('error',error);el('loading-title').textContent=title;detail.textContent=message;el('retry').hidden=!error;}
@@ -190,5 +191,11 @@ async function start(){try{manifest=await get<Manifest>('manifest.json');debug.m
         buildingsGroup.add(streetBuildings.group);pickMeshes.push(...streetBuildings.meshes);makeBuildings(streetBuildings.replaced);
         const note=document.createElement('p');note.id='street-buildings-info';note.textContent=`London Street: ${streetBuildings.models.size} buildings modelled in Blender. Footprints from OSM; heights, roof pitch, facade line and verandah depth from LINZ 1 m LiDAR (Christchurch 2024-25, CC BY 4.0); facades, colours and signs from street photos (Google Street View April 2025 for reference, Wikimedia Commons). Window sizes and colours are estimates.`;el('sources').append(note);
       }
+      // Street furniture kit placed from OSM and council asset records (npm run furniture).
+      streetKit=await loadStreetKit('london',heightAt);
+      if(streetKit){
+        scene.add(streetKit.group);
+        const note=document.createElement('p');note.id='street-kit-info';note.textContent=`Street furniture: ${streetKit.placed} items (${Object.entries(streetKit.models).map(([m,n])=>`${n} ${m}`).join(', ')}) from a reusable Blender kit, placed from ${Object.values(streetKit.sources).join('; ')}. Kit styles follow London Street photos; sizes are typical.`;el('sources').append(note);
+      }
     })();}catch(error){console.error(error);setMessage('Local world data is not ready','Run npm run data in lyttelton-world, then reload. Details: '+(error instanceof Error?error.message:String(error)),true);}}
-window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();basemap?.dispose();streetBuildings?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();
+window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();basemap?.dispose();streetBuildings?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});streetKit?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();

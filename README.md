@@ -161,3 +161,16 @@ Each model combines three sources:
 Window sizes, glazing bars and door positions are typical rather than measured, and colours are estimated by eye. The library's pitched black roofs are simplified to its measured ~5 m roof, tower and gabled wing. The OSM polygon tagged Everest is the restaurant's covered seating; the LiDAR and photos put the restaurant in the footprint beside it, so the spec swaps them. OSM maps the whole fire station site as a building; the model of the station building replaces it. Dormers are not modelled.
 
 Outputs: `buildings/london.blend` (one collection per building, textures packed, editable) and `public/buildings/london.glb`. `--measure` prints the measurements without building; `--export` re-exports an edited `.blend` without rebuilding it. In the viewer, the models replace their footprints (and any listed in `replaces`) and stay selectable: the inspector shows the model and its photo evidence.
+
+### Street furniture kit
+
+`npm run furniture -- --name london` places a reusable street-furniture kit wherever records show an item. The kit is built in Blender by `tools/blender_street_kit.py` (`street-kit/street-kit.blend`, exported to `public/street-kit/street-kit.glb`): ornamental and park lamps, a London Street pedestal litter bin with its compass emblem, a Big Belly compactor, benches with and without backs, a picnic table, bollard, bike hoops, drinking fountain, NZ Post and DX Mail boxes, a payphone, a bus stop, and stop, P5–P120 parking and no-stopping signs. Styles follow London Street photos; sizes are typical. Each prefab stands on its origin facing +Z in the GLB, so the same model is reused at every placement (one instanced mesh per part).
+
+Placements (`public/street-kit/<name>.json`) come from:
+- **OpenStreetMap** (ODbL) nodes: benches (their `direction` sets which way they face), waste baskets, post boxes, payphones, drinking water, bicycle parking, picnic tables, bollards, flagpoles, street lamps (`support=ornamental` picks the heritage lamp), bus stops and stop signs. A stop sign stands at the left kerb of its approach, facing oncoming traffic.
+- **Christchurch City Council park asset registers** (CC BY 4.0): seats, bins (`Style` picks the prefab), bollards and light poles, mostly in Albion Square and the reserves.
+- The street inventory keeps its own street lights; evidence within 6 m of one is not placed again. Items of the same kind within 2.5 m in two sources are one item.
+
+Anything without a recorded direction faces the nearest road. Christchurch's road signs and street lights are in its RAMM asset database, which is not published, so parking signs are in the kit but not yet placed. Mapillary's detected map features (signs, bins, lamps, CC BY-SA) would fill that gap and need a free Mapillary access token. Street View imagery is not used for placements: Google's terms do not allow deriving map data from it.
+
+`--kit` rebuilds the kit `.blend` from the script; otherwise an existing `.blend` (with any hand edits) is only exported. Add a prefab by writing a builder in `tools/blender_street_kit.py` and mapping a source tag to it in `tools/street_furniture.py`.

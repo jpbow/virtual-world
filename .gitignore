@@ -19,3 +19,6 @@ public/plants/imported/
 
 # Generated street-building models (tools/street_buildings.py)
 public/buildings/
+
+# Generated street furniture kit and placements (tools/street_furniture.py)
+public/street-kit/
