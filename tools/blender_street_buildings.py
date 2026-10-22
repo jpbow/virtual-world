@@ -16,6 +16,7 @@ job=json.loads(sys.argv[sys.argv.index('--')+1])
 if 'job' in job:job=json.load(open(job['job']))
 TILES={'weatherboard':1.2,'board':1.2,'corrugated':.762,'render':2.0,'tile':.6,'seam':1.6,'timber':1.0}
 GLASS='#34404a'
+LIGHT=bool(job.get('light'))                                     # lighter windows for typed (photo-less) buildings
 
 
 def log(*parts):print('BUILDINGS',*parts,flush=True)
@@ -23,10 +24,11 @@ def log(*parts):print('BUILDINGS',*parts,flush=True)
 
 def export():
     bpy.ops.object.select_all(action='DESELECT')
-    objects=[o for o in bpy.data.objects if o.type=='MESH' and o.get('osm_id')]
+    objects=[o for o in bpy.data.objects if o.type=='MESH' and (o.get('osm_id') or o.get('chunk'))]
     for o in objects:o.hide_set(False);o.select_set(True)
     bpy.ops.export_scene.gltf(filepath=job['glb'],export_format='GLB',use_selection=True,export_yup=True,export_apply=True,
-                              export_extras=True,export_image_format='AUTO')
+                              export_extras=True,export_image_format='AUTO',export_attributes=True,
+                              **({'export_vertex_color':'ACTIVE'} if LIGHT else {}))
     log(f'exported {len(objects)} buildings')
 
 
@@ -44,8 +46,16 @@ def image(name,colour_data=True):
     return _images[name]
 
 
+class Tint:
+    """A shared surface material plus this face's colour, carried as a vertex colour (glTF COLOR_0 multiplies
+    the base colour), so merged chunks need one material per surface rather than one per colour."""
+    def __init__(self,mat,colour):self.mat=mat;self.colour=tuple(linear(colour)[:3])
+    def __getitem__(self,key):return self.mat[key]
+
+
 def material(colour,texture=None,roughness=.85,metallic=0.):
     """A Principled material; a texture is a greyscale albedo multiplied by the colour (exported as glTF baseColorFactor)."""
+    if LIGHT and colour!='#ffffff':return Tint(material('#ffffff',texture,roughness,metallic),colour)
     key=(colour,texture,roughness,metallic)
     if key in _materials:return _materials[key]
     m=bpy.data.materials.new(f"{texture or 'plain'} {colour}");m.use_nodes=True
@@ -66,9 +76,11 @@ def material(colour,texture=None,roughness=.85,metallic=0.):
 
 class Mesh:
     """Faces with per-face materials; UVs are world-metre projections scaled by the material's tile size."""
-    def __init__(self):self.verts=[];self.faces=[];self.mats=[];self.matlist=[];self.uvs=[]
+    def __init__(self):self.verts=[];self.faces=[];self.mats=[];self.matlist=[];self.uvs=[];self.tags=[];self.tag=0;self.cols=[]
 
     def face(self,pts,mat,flip=False):
+        colour=(1.,1.,1.)
+        if isinstance(mat,Tint):colour=mat.colour;mat=mat.mat
         pts=[Vector(p) for p in pts]
         if flip:pts=pts[::-1]
         if len(pts)<3:return
@@ -79,7 +91,7 @@ class Mesh:
         if abs(nrm.z)<.7:h=Vector((0,0,1)).cross(nrm).normalized();uv=[(p.dot(h)/tile,p.z/tile) for p in pts]
         elif abs(nrm.z)>.999:uv=[(p.x/tile,p.y/tile) for p in pts]
         else:h=nrm.cross(Vector((0,0,1))).normalized();d=h.cross(nrm).normalized();uv=[(p.dot(h)/tile,p.dot(d)/tile) for p in pts]
-        i=len(self.verts);self.verts+=[tuple(p) for p in pts];self.faces.append(list(range(i,i+len(pts))));self.uvs+=uv
+        i=len(self.verts);self.verts+=[tuple(p) for p in pts];self.faces.append(list(range(i,i+len(pts))));self.uvs+=uv;self.tags+=[self.tag]*len(pts);self.cols+=[colour]*len(pts)
         if mat not in self.matlist:self.matlist.append(mat)
         self.mats.append(self.matlist.index(mat))
 
@@ -105,7 +117,13 @@ class Mesh:
         for poly in me.polygons:
             for li in poly.loop_indices:layer.data[li].uv=self.uvs[me.loops[li].vertex_index]
         for m in self.matlist:me.materials.append(m)
-        me.polygons.foreach_set('material_index',self.mats);me.validate();me.update()
+        me.polygons.foreach_set('material_index',self.mats)
+        # Which building each vertex belongs to, in a merged chunk (exported as the glTF attribute _BUILDING).
+        if any(self.tags):me.attributes.new('_building','FLOAT','POINT').data.foreach_set('value',[float(t) for t in self.tags])
+        if LIGHT:
+            col=me.color_attributes.new('Col','FLOAT_COLOR','POINT');col.data.foreach_set('color',[c for rgb in self.cols for c in (*rgb,1.)])
+            me.color_attributes.active_color=col
+        me.validate();me.update()
         ob=bpy.data.objects.new(name,me);collection.objects.link(ob);return ob
 
 
@@ -255,7 +273,7 @@ def front_top(m,F):
     return out
 
 
-def build_building(b,m,collection):
+def build_building(b,m,collection,mesh=None):
     F=Facade(m['facade'],m['floor']);zg=m['floor'];L=F.L;found=m['foundation']
     if not b.get('shopfront') and not b.get('open'):
         # Houses and service buildings sit at their own ground level (above a retaining wall or below the street),
@@ -267,8 +285,8 @@ def build_building(b,m,collection):
               roof=material(roof_colour,b.get('roofMaterial','corrugated'),.55,.25),flatroof=material(roof_colour,'corrugated',.6,.2),
               soffit=material('#e6e4de',None,.8),fascia=material(trim,None,.6),cap=material(wall_spec['colour'],None,.7),
               glass=material(GLASS,None,.08,.1),dark=material('#1d1f22',None,.7))
-    mesh=Mesh();blocks(mesh,m,b,F,mats,False)
-    if b.get('open'):return mesh.build(f"{b['id']} {b.get('name','')}"[:60],collection)
+    own=mesh is None;mesh=mesh or Mesh();blocks(mesh,m,b,F,mats,False)
+    if b.get('open'):return mesh.build(f"{b['id']} {b.get('name','')}"[:60],collection) if own else None
     ver=m.get('verandah') if b.get('verandah') else None
     vh=zg+(ver['height'] if ver else 3.2)
     # --- facade top: wall line, false front or deck ---
@@ -382,13 +400,17 @@ def build_building(b,m,collection):
             mesh.box(F.at,s+w/2-.05,s+w/2+.05,0,.14,max(z for _,z in pr)-1.1,max(z for _,z in pr)-.2,barge)
         s+=w
     # Pilasters at the facade ends of two-storey and timber buildings.
-    if storeys>=2 or wall_spec.get('cladding') in('weatherboard','corrugated'):
+    if (storeys>=2 or wall_spec.get('cladding') in('weatherboard','corrugated')) and not LIGHT:
         for s0,s1 in ((0,.22),(L-.22,L)):
             z1=min(z for _,z in top)-.18
             mesh.box(F.at,s0,s1,0,.06,found,z1,mats['trim'])
     # Upper windows.
     for s0,s1,lo,hi,kind,hood in details:
-        mesh.box(F.at,s0-.09,s1+.09,0,.04,hi,hi+.12,mats['trim']);mesh.box(F.at,s0-.12,s1+.12,0,.09,lo-.08,lo,mats['trim'])
+        mesh.box(F.at,s0-.12,s1+.12,0,.09,lo-.08,lo,mats['trim'],skip=('back',))
+        if LIGHT:                                                    # typical windows: glass, sill and a centre rail
+            mesh.face([F.at(s0,-.1,lo),F.at(s1,-.1,lo),F.at(s1,-.1,hi),F.at(s0,-.1,hi)],mats['glass'])
+            mid=(lo+hi)/2;mesh.face([F.at(s0,-.09,mid-.03),F.at(s1,-.09,mid-.03),F.at(s1,-.09,mid+.03),F.at(s0,-.09,mid+.03)],mats['trim']);continue
+        mesh.box(F.at,s0-.09,s1+.09,0,.04,hi,hi+.12,mats['trim'])
         mesh.box(F.at,s0-.09,s0,0,.04,lo,hi,mats['trim']);mesh.box(F.at,s1,s1+.09,0,.04,lo,hi,mats['trim'])
         if kind=='louvre':
             lv=material(b['upper'].get('colour','#6b4f3a'),None,.7);mesh.face([F.at(s0,-.1,lo),F.at(s1,-.1,lo),F.at(s1,-.1,hi),F.at(s0,-.1,hi)],lv)
@@ -478,14 +500,36 @@ def build_building(b,m,collection):
             s_=F.s_of(x,y);kk=F.k_of(x,y);mesh.box(F.at,s_-.05,s_+.05,kk-.05,kk+.05,z-.4,under_z,post)
             if vb.get('brackets'):
                 for sgn in (-1,1):mesh.box(F.at,s_+sgn*.05-(.25 if sgn<0 else 0),s_+sgn*.05+(.25 if sgn>0 else 0),kk-.03,kk+.03,under_z-.12,under_z,post)
-    return mesh.build(f"{b['id']} {b.get('name','')}"[:60],collection)
+    return mesh.build(f"{b['id']} {b.get('name','')}"[:60],collection) if own else None
+
+
+def build_chunks(root):
+    """Typed buildings merged into one mesh per chunk; a vertex attribute says which building it belongs to."""
+    measured={m['id']:m for m in job['measured']};specs={b['id']:b for b in job['spec']['buildings']};total=0
+    for chunk in job['chunks']:
+        mesh=Mesh();ids=[]
+        for bid in chunk['ids']:
+            mesh.tag=len(ids)+1;b=specs[bid]                        # 0 is reserved for "no building"
+            try:build_building(b,measured[bid],None,mesh);ids.append(bid)
+            except Exception as error:
+                log(f'{bid} not built: {type(error).__name__} {str(error)[:80]}')
+                # Drop its partial geometry (vertices stay, unreferenced, and are removed by validate()).
+                keep=[k for k,f in enumerate(mesh.faces) if mesh.tags[f[0]]!=mesh.tag]
+                mesh.faces=[mesh.faces[k] for k in keep];mesh.mats=[mesh.mats[k] for k in keep]
+        if not mesh.faces:continue
+        ob=mesh.build(chunk['name'],root);ob['chunk']=chunk['name']
+        ob['ids']=json.dumps(ids);ob['types']=json.dumps([specs[i].get('type','') for i in ids])
+        ob['storeys']=json.dumps([specs[i].get('storeys',1) for i in ids]);ob['names']=json.dumps([specs[i].get('name') or '' for i in ids])
+        ob['replaces']=','.join(r for i in ids for r in [i]+specs[i].get('replaces',[]));total+=len(ids)
+        log(f"{chunk['name']:<14} {len(ids):4d} buildings {len(ob.data.polygons):7d} faces")
+    return total
 
 
 def build():
     for o in list(bpy.data.objects):bpy.data.objects.remove(o)
     measured={m['id']:m for m in job['measured']};root=bpy.data.collections.new('Street buildings');bpy.context.scene.collection.children.link(root)
-    count=0
-    for b in job['spec']['buildings']:
+    count=build_chunks(root) if job.get('chunks') else 0
+    for b in ([] if job.get('chunks') else job['spec']['buildings']):
         m=measured.get(b['id'])
         if not m:continue
         col=bpy.data.collections.new((b.get('name') or b['id'])[:60]);root.children.link(col)

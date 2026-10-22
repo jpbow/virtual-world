@@ -52,6 +52,7 @@ class Grid:
 
     def pixels(self,poly):
         """(x, y, value) of pixel centres inside a polygon."""
+        if poly.is_empty:return np.zeros(0),np.zeros(0),np.zeros(0)
         x0,y0,x1,y1=poly.bounds
         xs=np.arange(math.floor(x0-self.left),math.ceil(x1-self.left))+self.left+.5
         ys=self.top-.5-np.arange(math.floor(self.top-y1),math.ceil(self.top-y0))
@@ -92,7 +93,7 @@ def street_lines(features,street):
     return [LineString([(p[0],p[1]) for p in r['points']]) for r in features['roads'] if r.get('name')==street and len(r['points'])>1]
 
 
-def frontage(ring,lines):
+def frontage(ring,lines,fallback=False):
     """The footprint edges facing the street: outward-facing, within 1.5 m of the closest edge, at least 1.5 m long.
 
     Returns ring-ordered edges (start, end, outward normal) merged into one facade line when consecutive."""
@@ -106,11 +107,14 @@ def frontage(ring,lines):
         q=near.interpolate(near.project(Point(mid)));to=np.array([q.x,q.y])-mid
         edges.append(dict(a=a,b=b,length=L,normal=n,dist=float(np.hypot(*to)),facing=float(n@to/max(1e-6,np.hypot(*to)))))
     facing=[e for e in edges if e['facing']>.5]
+    if not facing and fallback:facing=[max(edges,key=lambda e:e['length'])];facing[0]['dist']=0.
     if not facing:return None
     nearest=min(e['dist'] for e in facing if e['length']>=1.5) if any(e['length']>=1.5 for e in facing) else min(e['dist'] for e in facing)
     front=[e for e in facing if e['dist']<=nearest+1.5]
     # The facade line: from the first to the last front vertex, along the length-weighted mean direction.
-    t=sum((e['b']-e['a']) for e in front);t=t/np.hypot(*t);n=sum(e['normal']*e['length'] for e in front);n=n/np.hypot(*n)
+    t=sum((e['b']-e['a']) for e in front)
+    if np.hypot(*t)<1e-6:front=[max(front,key=lambda e:e['length'])];t=front[0]['b']-front[0]['a']
+    t=t/np.hypot(*t);n=sum(e['normal']*e['length'] for e in front);n=n/np.hypot(*n)
     # Snap the facade normal perpendicular to its direction (outward).
     n=np.array([t[1],-t[0]]) if np.dot([t[1],-t[0]],n)>0 else np.array([-t[1],t[0]])
     verts=np.array([v for e in front for v in (e['a'],e['b'])]);along=verts@t;offset=float(np.max(verts@n))
@@ -280,6 +284,27 @@ def heightfield(poly,dsm,spacing=.75):
     return pts,ring
 
 
+def wings(poly,t,n,dsm,ref,flat_rmse):
+    """Split a footprint at an inside corner, along either facade axis, into two wings and fit each a pitched
+    roof. Returns [(piece, fit), ...] with the piece nearest the street first, or None unless the wings beat
+    the flat roof by 0.1 m RMS."""
+    pts=np.array(poly.exterior.coords)[:-1];ccw=poly.exterior.is_ccw;best=None
+    for i in range(len(pts)):
+        a,c,d=pts[i-1],pts[i],pts[(i+1)%len(pts)];u_,v_=c-a,d-c;cross=u_[0]*v_[1]-u_[1]*v_[0]
+        if (cross<0)==ccw and abs(cross)>1e-6:                       # a reflex (inside) corner
+            for axis in (t,-n):
+                at=float(c@axis);other=np.array([-axis[1],axis[0]])
+                halves=[Polygon([axis*lo+other*-1e4,axis*hi+other*-1e4,axis*hi+other*1e4,axis*lo+other*1e4]) for lo,hi in ((-1e4,at),(at,1e4))]
+                pieces=[max(getattr(g,'geoms',[g]),key=lambda q:q.area) for g in (poly.intersection(h) for h in halves) if not g.is_empty]
+                if len(pieces)!=2 or min(q.area for q in pieces)<6:continue
+                fits=[next(iter(fit_roof(q,frame(q,t,n),dsm,ref,['gable','gable-end','hip'])),None) for q in pieces]
+                if None in fits:continue
+                total=sum(f['rmse']*q.area for f,q in zip(fits,pieces))/sum(q.area for q in pieces)
+                if best is None or total<best[0]:best=(total,list(zip(pieces,fits)))
+    if best is None or best[0]>flat_rmse-.1:return None
+    return sorted(best[1],key=lambda pf:-max(np.array(pf[0].exterior.coords)@n))
+
+
 def block(poly,kind,fit,fr,floor,overhang,parapet,dsm=None):
     """Walls, roof faces and parapet of one block (the main building or a lower rear section)."""
     out=dict(ring=[[round(x,3),round(y,3)] for x,y in np.array(poly.exterior.coords)[:-1]],kind=kind,parapet=parapet)
@@ -296,95 +321,155 @@ PITCHED=('hip','gable')
 
 
 def measure(name):
+    """Measure the spec's buildings; an `auto` area adds every other building in its bounds, typed by rule."""
     spec=json.loads((SPECS/f'{name}.json').read_text())
     features=json.loads((P.OUT/'features.json').read_text())
     by_id={b['id']:b for b in features['buildings']}
     missing=[b['id'] for b in spec['buildings'] if b['id'] not in by_id]
     if missing:sys.exit(f'Not in features.json: {missing}')
+    auto=spec.get('auto');tags={}
+    if auto:
+        import building_typology as T
+        osm=json.loads((P.CACHE/'osm.json').read_text());tags={f"{e['type']}/{e['id']}":e.get('tags',{}) for e in osm['elements'] if 'tags' in e}
+        taken={b['id'] for b in spec['buildings']}|{r for b in spec['buildings'] for r in b.get('replaces',[])}
+        for other in auto.get('exclude',[]):
+            o=json.loads((SPECS/f'{other}.json').read_text())['buildings'];taken|={b['id'] for b in o}|{r for b in o for r in b.get('replaces',[])}
+        W,S,E,N=auto['bounds']
+        for b in features['buildings']:
+            c=Polygon(b['ring']).centroid
+            if b['id'] not in taken and W<=c.x<=E and S<=c.y<=N:spec['buildings'].append({'id':b['id'],'auto':True})
     xs=[p[0] for b in spec['buildings'] for p in by_id[b['id']]['ring']];ys=[p[1] for b in spec['buildings'] for p in by_id[b['id']]['ring']]
     dem,dsm=lidar(name,(min(xs)-MARGIN,min(ys)-MARGIN,max(xs)+MARGIN,max(ys)+MARGIN))
-    out=[]
-    for b in spec['buildings']:
-        feature=by_id[b['id']];poly=Polygon(feature['ring']).buffer(0)
-        f=frontage(feature['ring'],street_lines(features,b.get('street','London Street')))
-        if f is None:P.log(' ',b['id'],'has no edge facing',b.get('street','London Street'));continue
-        t,n=np.array(f['t']),np.array(f['n'])
-        floor=float(np.median(dem(*(stations(f)+1.5*n[None]).T)))       # footpath level in front
-        kinds=[b['roof']] if b.get('roof') and b['roof']!='dsm' else ['flat','shed','gable','gable-end','hip']
-        fr=frame(poly,t,n);fits=fit_roof(poly,fr,dsm,floor,kinds);kind=b.get('roof') or (fits[0]['kind'] if fits else 'flat')
-        false_front=bool(b.get('parapet') or b.get('segments'))
-        overhang=0. if false_front or kind in('flat','shed','dsm') else b.get('eaves',.3)
-        # Register the facade on the LiDAR roof edge (pitched roofs with eaves: the edge is the eave line).
-        edge=roof_edge(f,dsm,floor);shift=b.get('facadeShift')
-        if shift is None:shift=round(edge+overhang,2) if edge is not None and abs(edge+overhang)>=.5 and not false_front else 0.
-        shift=float(np.clip(shift,-3,2.5));v_face=fr['v0']+shift
-        main=poly.intersection(halfplane(t,n,vmin=v_face))
-        if shift<0:
-            ua,ub=sorted([np.dot(f['a'],t),np.dot(f['b'],t)])
-            main=main.union(Polygon([t*ua-n*-v_face,t*ub-n*-v_face,t*ub-n*-fr['v0'],t*ua-n*-fr['v0']]).buffer(0))
-        main=max(getattr(main,'geoms',[main]),key=lambda g:g.area).buffer(0)
-        rear=None
-        if kind in PITCHED:
-            # A hip or gable spanning less than the footprint depth: the rest is a lower rear section.
-            ks=np.arange(shift+1.5,shift+10.01,.25);z=profile(f,dsm,ks);ridge=float(ks[int(np.argmax(z))])
-            depth=2*(ridge-shift)-overhang
-            if depth<fr['v1']-v_face-1.5:
-                rest=poly.intersection(halfplane(t,n,vmin=v_face+depth));main=main.intersection(halfplane(t,n,vmax=v_face+depth))
-                main=max(getattr(main,'geoms',[main]),key=lambda g:g.area)
-                rest=max(getattr(rest,'geoms',[rest]),key=lambda g:g.area)
-                if rest.area>4:rear=rest
-        fr=frame(main,t,n);facade=facade_line(f,shift)
-        fit=next(iter(fit_roof(main,fr,dsm,floor,[kind])),None) if kind!='dsm' else None
-        if kind!='dsm' and fit is None:
-            kind='flat';fit=next(iter(fit_roof(main,fr,dsm,floor,['flat'])),None)
-            # Too small or low for the LiDAR to separate from the ground: a labelled 2.6 m default.
-            if fit is None:fit=dict(kind='flat',eave=floor+2.6,slope=0.,rmse=None,ridge=2.6);P.log(' ',b['id'],'no LiDAR roof; 2.6 m default')
-        parapet=None
-        # Side and rear parapets; a taller false front is built separately on the facade.
-        if kind=='flat' and not b.get('open'):parapet=min(.4,(b.get('parapet') or {}).get('above',.4))
-        # Parts drawn from the DSM (a tower, a gabled wing) with their own roofs, cut from the main block.
-        parts=[]
-        for part in b.get('parts',[]):
-            from shapely.geometry import box as rect
-            pp=poly.intersection(rect(*part['box']));pp=max(getattr(pp,'geoms',[pp]),key=lambda g:g.area)
-            pf=frame(pp,t,n);pfit=fit_roof(pp,pf,dsm,floor,[part['roof']])
-            if pfit:parts.append(block(pp,part['roof'],pfit[0],pf,floor,0.,.25 if part['roof']=='flat' else None));main=main.difference(pp.buffer(.01))
-        # Side-by-side gables facing the street (a twin-gable roof): equal strips along the facade.
-        if b.get('gables',1)>1:
-            mf=frame(main,t,n);w=-n;k=b['gables'];cuts=np.linspace(mf['u0'],mf['u1'],k+1);strips=[]
-            for u0,u1 in zip(cuts,cuts[1:]):
-                band=Polygon([t*u0+w*-1e4,t*u1+w*-1e4,t*u1+w*1e4,t*u0+w*1e4]);sp_=main.intersection(band)
-                strips.append(max(getattr(sp_,'geoms',[sp_]),key=lambda g:g.area))
-            main=strips[0];kind='gable-end'
-            for sp_ in strips[1:]:
-                pf=frame(sp_,t,n);pfit=fit_roof(sp_,pf,dsm,floor,['gable-end'])
-                if pfit:parts.append(block(sp_,'gable-end',pfit[0],pf,floor,overhang,None))
-        main=max(getattr(main,'geoms',[main]),key=lambda g:g.area)
-        if parts:fr=frame(main,t,n);fit=next(iter(fit_roof(main,fr,dsm,floor,[kind]) or fit_roof(main,fr,dsm,floor,['flat'])),None);kind=fit['kind'] if fit else kind
-        blocks=[block(main,kind,fit,fr,floor,overhang,parapet,dsm)]+parts
-        if rear is not None:
-            rf=frame(rear,t,n);rfits=fit_roof(rear,rf,dsm,floor,['flat','shed'])
-            if rfits:blocks.append(block(rear,rfits[0]['kind'],rfits[0],rf,floor,0.,.3 if rfits[0]['kind']=='flat' else None))
-        # The parapet line: the highest DSM within 0.75 m behind the facade.
-        fz=float(np.percentile(np.max([dsm(*(stations(facade)-k*n[None]).T) for k in (.25,.5,.75)],axis=0),80))-floor
-        ver=verandah(facade,dsm,dem);posts=[]
-        spec_v=b.get('verandah')
-        if spec_v:
-            ver=dict(depth=spec_v.get('depth',ver['depth'] if ver else 2.4),height=spec_v.get('height',ver['height'] if ver else 3.1),measured=ver is not None)
-            if spec_v.get('posts'):
-                L=facade['length'];k=max(2,round(L/3.2)+1);a=np.array(facade['a']);tt=np.array(facade['t'])
-                for s in np.linspace(.2,L-.2,k):
-                    p=a+s*tt+(ver['depth']-.25)*n;posts.append([round(float(p[0]),3),round(float(p[1]),3),round(float(dem(*p)),2)])
-        fs=stations(facade);foot=dem(*(fs+1.5*n[None]).T)
-        inside=float(np.median(dem(*(fs-1.*n[None]).T)))                  # the building's own ground, behind the facade
-        out.append(dict(id=b['id'],name=b.get('name'),floor=round(floor,2),groundInside=round(inside,2),floorLeft=round(float(foot[0]),2),floorRight=round(float(foot[-1]),2),
-                        foundation=round(float(min(dem.pixels(poly)[2].min(),foot.min()))-.6,2),facade=facade,shift=shift,edge=edge,
-                        blocks=blocks,parapetTop=round(fz,2),verandah=ver,posts=posts,fits=fits[:3],roofColour=feature.get('roofColor')))
+    from shapely.strtree import STRtree
+    paths=[LineString([(p[0],p[1]) for p in r['points']]) for r in features['roads'] if len(r['points'])>1];tree=STRtree(paths)
+    out=[];kept=[];failed=0
+    for k,b in enumerate(spec['buildings']):
+        feature=by_id[b['id']]
+        try:
+            if b.get('auto'):
+                # Auto buildings face the nearest road or path; with none facing, the longest edge.
+                poly=Polygon(feature['ring']).buffer(0);near=[paths[i] for i in tree.query(poly.buffer(40))] or [paths[tree.query_nearest(poly)[0]]]
+                f=frontage(feature['ring'],near,fallback=True)
+                port=poly.centroid.y<auto.get('portBelow',-1e9)
+                kind,reason=T.classify(tags.get(b['id'],{}),poly,poly.centroid,port)
+                if kind is None:continue
+                b['prior']='pitched' if kind=='house' else None
+                b.update(open=True) if kind=='canopy' else None
+            else:
+                f=frontage(feature['ring'],street_lines(features,b.get('street','London Street')))
+                if f is None:P.log(' ',b['id'],'has no edge facing',b.get('street','London Street'));continue
+            m=measure_one(b,feature,f,dem,dsm)
+            if b.get('auto'):
+                m['roadDistance']=round(min(l.distance(Point(*f['a'])) for l in near),1)
+                b.clear();b.update(T.spec(feature['id'],kind,reason,m,tags.get(feature['id'],{})))
+            out.append(m);kept.append(b)
+        except Exception as error:
+            failed+=1;P.log(' ',b['id'],'not modelled:',type(error).__name__,str(error)[:80])
+        if (k+1)%250==0:P.log(f'  measured {k+1}/{len(spec["buildings"])}')
+    if failed:P.log(f'  {failed} buildings not modelled (they keep the generic extrusion)')
+    spec['buildings']=kept
     return spec,out
 
 
-def report(measured):
+def measure_one(b,feature,f,dem,dsm):
+    """Measure one building whose facade is the frontage f: footpath and ground levels, facade registration,
+    roof blocks, parapet line and verandah."""
+    poly=Polygon(feature['ring']).buffer(0);poly=max(getattr(poly,'geoms',[poly]),key=lambda g:g.area)
+    t,n=np.array(f['t']),np.array(f['n'])
+    floor=float(np.median(dem(*(stations(f)+1.5*n[None]).T)))       # footpath level in front
+    # Roof pixels are taken above the lower of the footpath and the building's own ground, so a house
+    # below its road (common on Lyttelton's slopes) still has a roof.
+    under=dem.pixels(poly)[2];ref=min(floor,float(np.median(under))) if len(under) else floor
+    kinds=[b['roof']] if b.get('roof') and b['roof']!='dsm' else ['flat','shed','gable','gable-end','hip']
+    fr=frame(poly,t,n);fits=fit_roof(poly,fr,dsm,ref,kinds)
+    if b.get('prior')=='pitched':fits.sort(key=lambda r:r['rmse']+(.18 if r['kind'] in('flat','shed') else 0))   # houses: flat must clearly win
+    # An L-shaped house whose roof no single plane set fits: two wings, each with its own pitched roof.
+    wing=None
+    if b.get('prior')=='pitched' and fits and fits[0]['kind'] in('flat','shed') and fits[0]['rmse']>.3:
+        wing=wings(poly,t,n,dsm,ref,fits[0]['rmse'])
+        if wing:poly_main,kind=wing[0][0],wing[0][1]['kind']
+    kind=b.get('roof') or (fits[0]['kind'] if fits else 'flat')
+    false_front=bool(b.get('parapet') or b.get('segments'))
+    overhang=0. if false_front or kind in('flat','shed','dsm') else b.get('eaves',.3)
+    # Register the facade on the LiDAR roof edge (pitched roofs with eaves: the edge is the eave line).
+    edge=roof_edge(f,dsm,floor);shift=b.get('facadeShift')
+    if shift is None:shift=round(edge+overhang,2) if edge is not None and abs(edge+overhang)>=.5 and not false_front else 0.
+    shift=float(np.clip(shift,-3,2.5));v_face=fr['v0']+shift
+    main=poly.intersection(halfplane(t,n,vmin=v_face))
+    if shift<0:
+        ua,ub=sorted([np.dot(f['a'],t),np.dot(f['b'],t)])
+        main=main.union(Polygon([t*ua-n*-v_face,t*ub-n*-v_face,t*ub-n*-fr['v0'],t*ua-n*-fr['v0']]).buffer(0))
+    main=max(getattr(main,'geoms',[main]),key=lambda g:g.area).buffer(0)
+    if wing:main=main.intersection(poly_main.buffer(.01));main=max(getattr(main,'geoms',[main]),key=lambda g:g.area)
+    rear=None
+    if kind in PITCHED and not wing:
+        # A hip or gable spanning less than the footprint depth: the rest is a lower rear section.
+        ks=np.arange(shift+1.5,shift+10.01,.25);z=profile(f,dsm,ks);ridge=float(ks[int(np.argmax(z))])
+        depth=2*(ridge-shift)-overhang
+        if depth<fr['v1']-v_face-1.5:
+            rest=poly.intersection(halfplane(t,n,vmin=v_face+depth));main=main.intersection(halfplane(t,n,vmax=v_face+depth))
+            main=max(getattr(main,'geoms',[main]),key=lambda g:g.area)
+            rest=max(getattr(rest,'geoms',[rest]),key=lambda g:g.area)
+            if rest.area>4:rear=rest
+    fr=frame(main,t,n);facade=facade_line(f,shift)
+    fit=next(iter(fit_roof(main,fr,dsm,ref,[kind])),None) if kind!='dsm' else None
+    if kind!='dsm' and fit is None:
+        kind='flat';fit=next(iter(fit_roof(main,fr,dsm,ref,['flat'])),None)
+        # Too small or low for the LiDAR to separate from the ground: a labelled 2.6 m default.
+        if fit is None:fit=dict(kind='flat',eave=floor+2.6,slope=0.,rmse=None,ridge=2.6);P.log(' ',b['id'],'no LiDAR roof; 2.6 m default')
+    parapet=None
+    # Side and rear parapets; a taller false front is built separately on the facade.
+    if kind=='flat' and not b.get('open'):parapet=min(.4,(b.get('parapet') or {}).get('above',.4))
+    # Parts drawn from the DSM (a tower, a gabled wing) with their own roofs, cut from the main block.
+    parts=[]
+    for piece,pfit in (wing or [])[1:]:
+        pf=frame(piece,t,n);parts.append(block(piece,pfit['kind'],pfit,pf,ref,overhang,None))
+    for part in b.get('parts',[]):
+        from shapely.geometry import box as rect
+        pp=poly.intersection(rect(*part['box']));pp=max(getattr(pp,'geoms',[pp]),key=lambda g:g.area)
+        pf=frame(pp,t,n);pfit=fit_roof(pp,pf,dsm,ref,[part['roof']])
+        if pfit:parts.append(block(pp,part['roof'],pfit[0],pf,floor,0.,.25 if part['roof']=='flat' else None));main=main.difference(pp.buffer(.01))
+    # Side-by-side gables facing the street (a twin-gable roof): equal strips along the facade.
+    if b.get('gables',1)>1:
+        mf=frame(main,t,n);w=-n;k=b['gables'];cuts=np.linspace(mf['u0'],mf['u1'],k+1);strips=[]
+        for u0,u1 in zip(cuts,cuts[1:]):
+            band=Polygon([t*u0+w*-1e4,t*u1+w*-1e4,t*u1+w*1e4,t*u0+w*1e4]);sp_=main.intersection(band)
+            strips.append(max(getattr(sp_,'geoms',[sp_]),key=lambda g:g.area))
+        main=strips[0];kind='gable-end'
+        for sp_ in strips[1:]:
+            pf=frame(sp_,t,n);pfit=fit_roof(sp_,pf,dsm,ref,['gable-end'])
+            if pfit:parts.append(block(sp_,'gable-end',pfit[0],pf,floor,overhang,None))
+    main=max(getattr(main,'geoms',[main]),key=lambda g:g.area)
+    if parts:fr=frame(main,t,n);fit=next(iter(fit_roof(main,fr,dsm,ref,[kind]) or fit_roof(main,fr,dsm,ref,['flat'])),None);kind=fit['kind'] if fit else kind
+    blocks=[block(main,kind,fit,fr,floor,overhang,parapet,dsm)]+parts
+    if rear is not None:
+        rf=frame(rear,t,n);rfits=fit_roof(rear,rf,dsm,ref,['flat','shed'])
+        if rfits:blocks.append(block(rear,rfits[0]['kind'],rfits[0],rf,floor,0.,.3 if rfits[0]['kind']=='flat' else None))
+    # The parapet line: the highest DSM within 0.75 m behind the facade.
+    fz=float(np.percentile(np.max([dsm(*(stations(facade)-k*n[None]).T) for k in (.25,.5,.75)],axis=0),80))-floor
+    ver=verandah(facade,dsm,dem);posts=[]
+    spec_v=b.get('verandah')
+    if spec_v:
+        ver=dict(depth=spec_v.get('depth',ver['depth'] if ver else 2.4),height=spec_v.get('height',ver['height'] if ver else 3.1),measured=ver is not None)
+        if spec_v.get('posts'):
+            L=facade['length'];k=max(2,round(L/3.2)+1);a=np.array(facade['a']);tt=np.array(facade['t'])
+            for s in np.linspace(.2,L-.2,k):
+                p=a+s*tt+(ver['depth']-.25)*n;posts.append([round(float(p[0]),3),round(float(p[1]),3),round(float(dem(*p)),2)])
+    fs=stations(facade);foot=dem(*(fs+1.5*n[None]).T)
+    inside=float(np.median(dem(*(fs-1.*n[None]).T)))                  # the building's own ground, behind the facade
+    return dict(id=b['id'],name=b.get('name'),floor=round(floor,2),groundInside=round(inside,2),floorLeft=round(float(foot[0]),2),floorRight=round(float(foot[-1]),2),
+                    foundation=round(float(min(dem.pixels(poly)[2].min(),foot.min()))-.6,2),facade=facade,shift=shift,edge=edge,
+                    blocks=blocks,parapetTop=round(fz,2),verandah=ver,posts=posts,fits=fits[:3],roofColour=feature.get('roofColor'))
+
+
+def report(measured,spec):
+    auto={b['id']:b for b in spec['buildings'] if b.get('auto')}
+    if auto:
+        from collections import Counter
+        P.log('  auto:',', '.join(f'{n} {k}' for k,n in Counter(b['type'] for b in auto.values()).most_common()),
+              '·',', '.join(f'{n} {k}' for k,n in Counter(m['blocks'][0]['kind'] for m in measured if m['id'] in auto).most_common()),'roofs')
     for m in measured:
+        if m['id'] in auto:continue
         main=m['blocks'][0];alt=' / '.join(f"{x['kind']} {x['rmse']}" for x in m['fits'][1:])
         roof=f"{main['kind']} eave +{main.get('eave',0):4.1f} pitch {math.degrees(math.atan(abs(main.get('slope',0)))):4.1f}° rms {main.get('rmse','-')}" if main['kind']!='dsm' else 'heightfield'
         rear=f" · rear {m['blocks'][1]['kind']} +{m['blocks'][1]['top']:.1f}" if len(m['blocks'])>1 else ''
@@ -398,12 +483,18 @@ def main():
     ap.add_argument('--export',action='store_true',help='export buildings/<name>.blend without rebuilding (keeps hand edits)')
     args=ap.parse_args()
     source=SPECS/f'{args.name}.blend';glb=PUBLIC/f'{args.name}.glb';PUBLIC.mkdir(parents=True,exist_ok=True)
-    job={'mode':'export','blend':str(source),'glb':str(glb)}
+    job={'mode':'export','blend':str(source),'glb':str(glb),'light':bool(json.loads((SPECS/f'{args.name}.json').read_text()).get('auto'))}
     if not args.export:
-        spec,measured=measure(args.name);report(measured)
+        spec,measured=measure(args.name);report(measured,spec)
         if args.measure:return
         out=P.CACHE/f'buildings-{args.name}-job.json'
         job.update(mode='build',spec=spec,measured=measured,textures=str(textures()))
+        if spec.get('auto'):
+            # Typed areas build as merged chunks on a grid, by footprint centroid.
+            size=spec['auto'].get('chunk',250);chunks={}
+            for m in measured:
+                c=Polygon(m['blocks'][0]['ring']).centroid;key=f'chunk_{math.floor(c.x/size)}_{math.floor(c.y/size)}';chunks.setdefault(key,[]).append(m['id'])
+            job.update(chunks=[dict(name=k,ids=v) for k,v in sorted(chunks.items())],light=True)
         out.write_text(json.dumps(job));job={'job':str(out)}
     elif not source.exists():sys.exit(f'{source.relative_to(P.ROOT)} does not exist: build it first')
     P.log('Street buildings',args.name,'build' if not args.export else 'export','->',glb.relative_to(P.ROOT))

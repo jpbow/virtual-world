@@ -162,6 +162,18 @@ Window sizes, glazing bars and door positions are typical rather than measured, 
 
 Outputs: `buildings/london.blend` (one collection per building, textures packed, editable) and `public/buildings/london.glb`. `--measure` prints the measurements without building; `--export` re-exports an edited `.blend` without rebuilding it. In the viewer, the models replace their footprints (and any listed in `replaces`) and stay selectable: the inspector shows the model and its photo evidence.
 
+### The rest of Lyttelton (typed buildings)
+
+`npm run buildings -- --name lyttelton` models every other building in the township and port (`buildings/lyttelton.json`: about 1,850, from Naval Point to Cashin Quay) the same way as London Street, except for the facade notes, which nobody has written for these buildings. Footprints are OSM. LiDAR measures each building's frontage level, its own ground level, facade registration, roof form and pitch (L-shaped houses get a separate roof on each wing), eave height and storeys, and the roof colour comes from the aerial. The facade comes from the building's type (`tools/building_typology.py`):
+
+- **Type** from OSM tags where present (`building=*`, or a shop, office, café, etc. on the building), else from the footprint: round footprints are tanks (Naval Point), under 28 m² outbuildings, large or port-side ones industrial, the rest houses.
+- **Facade by type:** weatherboard houses with ground-floor windows and a front door (and upper windows on two-storey houses), sheds and garages with a garage door where they face a road, industrial sheds in corrugated iron with roller doors, shops with shopfronts (and a verandah only where the LiDAR shows one), civic buildings with paired windows, white tanks. Window and door counts follow the measured frontage.
+- **Colours** are drawn per building from a palette of colours common in Lyttelton. They are illustrative, not observed; the inspector says so for every typed building.
+
+Typed buildings face the nearest road or path (else their longest edge). To give one an observed facade, add an entry to `buildings[]` in `buildings/lyttelton.json` with the same fields as `london.json`; it then replaces the typed version.
+
+The area builds as merged meshes on a 400 m grid (`public/buildings/lyttelton.glb`, about 40 MB): each chunk shares one material per surface (weatherboard, corrugated iron, render, glass…) and carries every building's colours as vertex colours, about a dozen materials and 250 draw calls for the whole town. A per-vertex `_BUILDING` attribute keeps buildings selectable. Typed windows are lighter than London Street's (glass, sill and rail, no architraves). The few buildings the measurement cannot handle (degenerate footprints) keep their generic extrusion.
+
 ### Street furniture kit
 
 `npm run furniture -- --name london` places a reusable street-furniture kit wherever records show an item. The kit is built in Blender by `tools/blender_street_kit.py` (`street-kit/street-kit.blend`, exported to `public/street-kit/street-kit.glb`): ornamental and park lamps, a London Street pedestal litter bin with its compass emblem, a Big Belly compactor, benches with and without backs, a picnic table, bollard, bike hoops, drinking fountain, NZ Post and DX Mail boxes, a payphone, a bus stop, and stop, give way, parking (P5–P120 and a plain P) and no-stopping signs. Styles follow London Street photos; sizes are typical. Each prefab stands on its origin facing +Z in the GLB, so the same model is reused at every placement (one instanced mesh per part).
