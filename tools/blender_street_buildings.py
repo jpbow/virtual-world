@@ -204,7 +204,7 @@ def blocks(mesh,m,b,F,mats,facade_open):
         n=len(wall)
         for i in range(n):
             p,q=wall[i],wall[(i+1)%n]
-            if bi==0 and abs(F.k_of(p[0],p[1]))<.06 and abs(F.k_of(q[0],q[1]))<.06:continue   # the facade
+            if abs(F.k_of(p[0],p[1]))<.06 and abs(F.k_of(q[0],q[1]))<.06:continue   # the facade, built with its openings
             mesh.face([(p[0],p[1],found),(q[0],q[1],found),(q[0],q[1],q[2]+par),(p[0],p[1],p[2]+par)],mats['wall'])
         if blk['kind']=='dsm':
             ring=[(p[0],p[1]) for p in wall];pts=[(p[0],p[1]) for p in blk['points']];zs=[p[2] for p in wall]+[p[2] for p in blk['points']]
@@ -245,10 +245,9 @@ PITCHED=('hip','gable','gable-end')
 
 
 def front_top(m,F):
-    """The main block's wall-top line along the facade [(s, z)], plus its parapet."""
-    blk=m['blocks'][0];par=blk.get('parapet') or 0
-    pts=sorted((F.s_of(p[0],p[1]),p[2]+par) for p in blk['wall'] if abs(F.k_of(p[0],p[1]))<.06)
-    if len(pts)<2:z=max(p[2] for p in blk['wall'])+par;return [(0,z),(F.L,z)]
+    """The wall-top line along the facade [(s, z)] of every block that reaches it, plus parapets."""
+    pts=sorted((F.s_of(p[0],p[1]),p[2]+(blk.get('parapet') or 0)) for blk in m['blocks'] for p in blk['wall'] if abs(F.k_of(p[0],p[1]))<.06)
+    if len(pts)<2:blk=m['blocks'][0];z=max(p[2] for p in blk['wall'])+(blk.get('parapet') or 0);return [(0,z),(F.L,z)]
     pts=[(max(0,min(F.L,s)),z) for s,z in pts];pts[0]=(0,pts[0][1]);pts[-1]=(F.L,pts[-1][1])
     out=[]
     for p in pts:
@@ -258,6 +257,10 @@ def front_top(m,F):
 
 def build_building(b,m,collection):
     F=Facade(m['facade'],m['floor']);zg=m['floor'];L=F.L;found=m['foundation']
+    if not b.get('shopfront') and not b.get('open'):
+        # Houses and service buildings sit at their own ground level (above a retaining wall or below the street),
+        # with at least 2.5 m under the eave.
+        zg=min(m.get('groundInside',zg),min(z for _,z in front_top(m,F))-(m['blocks'][0].get('parapet') or 0)-2.5)
     wall_spec=b.get('wall',{'cladding':'render','colour':'#d8d6d0'});trim=b.get('trim','#efefea')
     roof_colour=b.get('roofColour') or m.get('roofColour') or '#8a8d8c'
     mats=dict(wall=material(wall_spec['colour'],wall_spec.get('cladding','render'),.85),trim=material(trim,None,.6),
@@ -308,6 +311,29 @@ def build_building(b,m,collection):
                 for i in range(1,bays):x=s0+(s1-s0)*i/bays;mesh.box(F.at,x-.035,x+.035,-.1,.02,a,c,frame)
                 if sf.get('transom') or c-a>2.3:mesh.box(F.at,s0,s1,-.1,.02,c-.55,c-.48,frame)
             if a==sill:mesh.box(F.at,s0,s1,0,.03,zg-.3,sill,stall)
+    # Houses and service buildings: ground-floor windows, a front door and garage or roller doors, at the
+    # building's own ground level (houses can sit above a retaining wall or below the street), under the eave.
+    taken=[(g['at']*L-g.get('width',2.6)/2-.2,g['at']*L+g.get('width',2.6)/2+.2) for g in b.get('garages',[])]
+    for g in b.get('garages',[]):
+        c=g['at']*L;w=g.get('width',2.6);h=g.get('height',2.4);door=material(g.get('colour','#d9d9d6'),None,.5)
+        openings.append((c-w/2,c+w/2,zg,zg+h));mesh.face([F.at(c-w/2,-.12,zg-.3),F.at(c+w/2,-.12,zg-.3),F.at(c+w/2,-.12,zg+h),F.at(c-w/2,-.12,zg+h)],door)
+        z=zg+.3
+        while z<zg+h-.1:mesh.box(F.at,c-w/2,c+w/2,-.12,-.1,z,z+.03,door);z+=.32
+        if g.get('windows'):mesh.face([F.at(c-w/2+.15,-.095,zg+h-.75),F.at(c+w/2-.15,-.095,zg+h-.75),F.at(c+w/2-.15,-.095,zg+h-.45),F.at(c-w/2+.15,-.095,zg+h-.45)],mats['glass'])
+        mesh.box(F.at,c-w/2-.1,c+w/2+.1,0,.05,zg+h,zg+h+.12,mats['trim'])
+    low=b.get('lower')
+    if low:
+        if low.get('door') is not None:
+            c=low['door']*L;taken.append((c-.65,c+.65));openings.append((c-.45,c+.45,zg+.05,zg+2.1))
+            dc=material(low.get('doorColour',trim),None,.5);mesh.face([F.at(c-.45,-.1,zg),F.at(c+.45,-.1,zg),F.at(c+.45,-.1,zg+2.1),F.at(c-.45,-.1,zg+2.1)],dc)
+            mesh.box(F.at,c-.55,c+.55,0,.05,zg+2.1,zg+2.22,mats['trim']);mesh.box(F.at,c-.55,c-.45,0,.05,zg,zg+2.1,mats['trim']);mesh.box(F.at,c+.45,c+.55,0,.05,zg,zg+2.1,mats['trim'])
+        k=low.get('windows',0);kind=low.get('type','single');w={'pair':1.75,'single':1.0}.get(kind,.85)
+        for i in range(k):
+            c=L*(i+.5)/k
+            for a_,b_ in taken:                                        # slide clear of doors
+                if c+w/2>a_ and c-w/2<b_:c=a_-w/2-.1 if c<(a_+b_)/2 else b_+w/2+.1
+            if c-w/2<.3 or c+w/2>L-.3:continue
+            openings.append((c-w/2,c+w/2,zg+.9,zg+2.2));details.append((c-w/2,c+w/2,zg+.9,zg+2.2,kind,low.get('hood')))
     upper=b.get('upper');storeys=b.get('storeys',1)
     wins=[]
     if storeys>=2:
@@ -326,7 +352,7 @@ def build_building(b,m,collection):
             k=upper['windows']
             for i in range(k):wins.append((L*(i+.5)/k,lo,hi,'pair' if i in upper.get('pairs',[]) else upper.get('type','sash'),upper.get('hood')))
     for sc,lo,hi,kind,hood in wins:
-        if hi-lo<.6:continue
+        if hi-lo<.6 or (sc-.5<.25 or sc+.5>L-.25):continue
         w={'pair':1.75,'louvre':1.5,'single':1.0}.get(kind,.85);s0,s1=sc-w/2,sc+w/2
         openings.append((s0,s1,lo,hi));details.append((s0,s1,lo,hi,kind,hood))
     reveal=material(trim,None,.6)
@@ -337,7 +363,9 @@ def build_building(b,m,collection):
         mesh.face(back,mats['wall'],flip=True)
         mesh.face([F.at(0,-.22,found),F.at(0,0,found),F.at(0,0,top[0][1]),F.at(0,-.22,top[0][1])],mats['wall'])
         mesh.face([F.at(L,0,found),F.at(L,-.22,found),F.at(L,-.22,top[-1][1]),F.at(L,0,top[-1][1])],mats['wall'])
-    for (sa,za),(sb,zb) in zip(top,top[1:]):
+    # A cap along the facade top, for parapets and false fronts (an eaved roof covers the wall top itself).
+    eaved=any(blk['kind'] in PITCHED or blk['kind']=='dsm' for blk in m['blocks']) and not has_false and not b.get('deck')
+    for (sa,za),(sb,zb) in ([] if eaved else zip(top,top[1:])):
         if sb-sa<1e-3:continue                                       # vertical steps of a shaped parapet
         pts=[Vector(F.at(sa,.09,za-.16)),Vector(F.at(sb,.09,zb-.16)),Vector(F.at(sb,.09,zb+.06)),Vector(F.at(sa,.09,za+.06))]
         mesh.face(pts,mats['cap'])

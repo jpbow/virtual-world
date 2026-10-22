@@ -1,5 +1,5 @@
 {
-  "title": "London Street, Oxford Street to Canterbury Street",
+  "title": "London Street, Lyttelton",
   "notes": "Facade notes come from street-level photos: Google Street View (April 2025, viewed for reference only, not copied) and Wikimedia Commons (credited per building). Heights, roof pitch, footpath level and verandah depth are measured from LINZ 1 m LiDAR (Christchurch 2024-25) by tools/street_buildings.py; footprints are OSM. Colours are estimated by eye from the photos. Window and door counts follow the photos; their exact sizes and spacing are typical, not measured.",
   "buildings": [
     {
@@ -616,6 +616,610 @@
         "colour": "#9ea2a3",
         "brackets": true
       }
+    },
+    {
+      "id": "way/356211918",
+      "name": "40 London Street (container bar)",
+      "evidence": "Street View Apr 2025: a painted shipping container with two windows and a deck",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#7a3a2c"
+      },
+      "trim": "#f0eee8",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.15
+      },
+      "lower": {
+        "windows": 2,
+        "type": "single"
+      }
+    },
+    {
+      "id": "way/233807212",
+      "name": "The Vapor Box (container shop)",
+      "evidence": "Street View Apr 2025: small white kiosk with a red top band",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#ecebe6"
+      },
+      "trim": "#c23a32",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.3
+      },
+      "lower": {
+        "windows": 1,
+        "door": 0.75,
+        "doorColour": "#c23a32"
+      },
+      "sign": {
+        "text": "",
+        "colour": "#c23a32",
+        "on": "facade",
+        "width": 1
+      }
+    },
+    {
+      "id": "way/233807210",
+      "name": "Mike Pero Real Estate (container shop)",
+      "evidence": "Street View Apr 2025: small white kiosk with a red top band",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#ecebe6"
+      },
+      "trim": "#c23a32",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.3
+      },
+      "lower": {
+        "windows": 1,
+        "door": 0.75,
+        "doorColour": "#7a7d80"
+      },
+      "sign": {
+        "text": "",
+        "colour": "#c23a32",
+        "on": "facade",
+        "width": 1
+      }
+    },
+    {
+      "id": "way/101185373",
+      "name": "Nom Nom Kitchen (44 London Street)",
+      "evidence": "Street View Apr 2025: white weatherboard with black pilasters, bands and boxed parapet; timber doors; sloped verandah",
+      "storeys": 2,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#efeee9"
+      },
+      "trim": "#1f2022",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.6
+      },
+      "upper": {
+        "windows": 2,
+        "type": "pair"
+      },
+      "shopfront": {
+        "bays": 2,
+        "door": 0.75,
+        "frame": "#2a2522",
+        "stall": "#1f2022"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#1f2022",
+        "fascia": "#1f2022",
+        "fasciaHeight": 0.2,
+        "colour": "#a7aaa8"
+      }
+    },
+    {
+      "id": "way/156294552",
+      "name": "Ray White (London Street cabin)",
+      "evidence": "Street View Apr 2025: grey board cabin with a yellow door and a white-framed window",
+      "storeys": 1,
+      "roof": "gable",
+      "wall": {
+        "cladding": "board",
+        "colour": "#7d8084"
+      },
+      "trim": "#efeee8",
+      "eaves": 0.2,
+      "lower": {
+        "windows": 1,
+        "door": 0.3,
+        "doorColour": "#e8c440"
+      }
+    },
+    {
+      "id": "way/101185414",
+      "name": "Min Sarginson Real Estate (51 London Street)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d3d4d0"
+      },
+      "trim": "#f2f2ee",
+      "eaves": 0.25,
+      "upper": {
+        "windows": 2,
+        "type": "single"
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.45,
+        "frame": "#3a3d40",
+        "stall": "#ecebe6"
+      }
+    },
+    {
+      "id": "way/101185486",
+      "name": "Former Lyttelton fire station (London Street)",
+      "evidence": "Street View Apr 2025: white rendered gable front with a roller door; OSM notes it was a fire station",
+      "storeys": 1,
+      "roof": "gable-end",
+      "wall": {
+        "cladding": "render",
+        "colour": "#ecebe6"
+      },
+      "trim": "#d8d7d2",
+      "garages": [
+        {
+          "at": 0.68,
+          "width": 3.2,
+          "height": 3.0,
+          "colour": "#b9bcbd"
+        }
+      ],
+      "lower": {
+        "windows": 1,
+        "type": "pair"
+      }
+    },
+    {
+      "id": "way/101185420",
+      "name": "Lyttelton Fire Station (65 London Street)",
+      "evidence": "Street View Apr 2025: low-pitched gabled shed, white metal cladding with a vertical timber centre panel. OSM also maps the whole fire station site (way/397904261) as a building; the LiDAR shows the building is this footprint, so the model replaces both.",
+      "storeys": 1,
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#e6e6e2"
+      },
+      "trim": "#8a8d8f",
+      "segments": [
+        {
+          "width": 0.3
+        },
+        {
+          "width": 0.4,
+          "sign": {
+            "text": "LYTTELTON VOLUNTEER FIRE BRIGADE",
+            "colour": "#b7966d",
+            "textColour": "#3a2a1c"
+          }
+        },
+        {
+          "width": 0.3
+        }
+      ],
+      "parapet": {
+        "shape": "flat",
+        "above": 0.3
+      },
+      "lower": {
+        "windows": 2,
+        "type": "single"
+      },
+      "replaces": [
+        "way/397904261"
+      ]
+    },
+    {
+      "id": "way/383019987",
+      "name": "50 London Street",
+      "evidence": "Street View Apr 2025: red brick, two storeys, terracotta hipped roof, white sash windows",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "tile",
+        "colour": "#8e3b2c"
+      },
+      "trim": "#f2f2ee",
+      "roofColour": "#9b4a38",
+      "eaves": 0.35,
+      "upper": {
+        "windows": 2,
+        "type": "sash"
+      },
+      "lower": {
+        "windows": 2,
+        "type": "sash"
+      }
+    },
+    {
+      "id": "way/101185369",
+      "name": "London St Books",
+      "evidence": "Street View Apr 2025: dark-stained board, tiled gable roof and lean-to verandah, white fascia sign, red door",
+      "storeys": 1,
+      "roof": "gable",
+      "wall": {
+        "cladding": "board",
+        "colour": "#3b3330"
+      },
+      "trim": "#efeee8",
+      "roofColour": "#5e4a40",
+      "eaves": 0.3,
+      "shopfront": {
+        "bays": 3,
+        "door": 0.5,
+        "frame": "#3b3330",
+        "stall": "#8a8682"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#2e2724",
+        "fascia": "#efeee8",
+        "fasciaHeight": 0.35,
+        "colour": "#5e4a40",
+        "text": "London St. Books",
+        "textColour": "#2b2b2b"
+      }
+    },
+    {
+      "id": "way/156292571",
+      "name": "Outdoor dining shelter (London Street)",
+      "evidence": "Street View Apr 2025: timber pergola beside London St Books",
+      "open": true,
+      "roof": "flat",
+      "trim": "#6b5440",
+      "roofColour": "#b8a88f"
+    },
+    {
+      "id": "way/101185489",
+      "name": "Lyttelton Ambulance Station (52 London Street)",
+      "evidence": "Street View Apr 2025: white rendered gable front, St John lettering, two roller doors, three windows above",
+      "storeys": 2,
+      "roof": "gable-end",
+      "wall": {
+        "cladding": "render",
+        "colour": "#efeee9"
+      },
+      "trim": "#3a3d40",
+      "garages": [
+        {
+          "at": 0.3,
+          "width": 2.9,
+          "height": 2.7,
+          "colour": "#e9e9e6",
+          "windows": true
+        },
+        {
+          "at": 0.62,
+          "width": 2.9,
+          "height": 2.7,
+          "colour": "#e9e9e6",
+          "windows": true
+        }
+      ],
+      "lower": {
+        "door": 0.88,
+        "doorColour": "#e9e9e6"
+      },
+      "upper": {
+        "windows": 3,
+        "type": "single"
+      },
+      "sign": {
+        "text": "THE ORDER OF ST JOHN",
+        "colour": "#efeee9",
+        "textColour": "#1f2022",
+        "on": "facade",
+        "width": 0.7
+      }
+    },
+    {
+      "id": "way/101185434",
+      "name": "Dead Video (56 London Street)",
+      "evidence": "Street View Apr 2025: charcoal weatherboard, hipped roof, two bay windows above, garage door and shop window below",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#3f4246"
+      },
+      "trim": "#2c2e31",
+      "eaves": 0.3,
+      "upper": {
+        "windows": 2,
+        "type": "pair"
+      },
+      "garages": [
+        {
+          "at": 0.22,
+          "width": 2.4,
+          "height": 2.4,
+          "colour": "#2c2e31"
+        }
+      ],
+      "lower": {
+        "door": 0.55,
+        "doorColour": "#e9e9e6",
+        "windows": 1,
+        "type": "pair"
+      }
+    },
+    {
+      "id": "way/101185499",
+      "name": "London Street cottages (terrace)",
+      "evidence": "Street View Apr 2025: white weatherboard cottages with green gable roofs facing the street",
+      "storeys": 1,
+      "roof": "gable-end",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#efeee9"
+      },
+      "trim": "#f7f7f3",
+      "roofColour": "#4f6e4e",
+      "eaves": 0.3,
+      "lower": {
+        "windows": 1,
+        "type": "single"
+      }
+    },
+    {
+      "id": "way/101185337",
+      "name": "London Street villa (blue-grey)",
+      "evidence": "Street View Apr 2025: weatherboard villa with hipped roof and full-width verandah",
+      "storeys": 1,
+      "roof": "hip",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#8495a6"
+      },
+      "trim": "#f2f2ee",
+      "roofColour": "#9a9d9c",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "single",
+        "door": 0.5,
+        "doorColour": "#e9e9e6"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#f2f2ee",
+        "fascia": "#f2f2ee",
+        "fasciaHeight": 0.15,
+        "colour": "#9a9d9c",
+        "depth": 1.8,
+        "height": 2.6
+      }
+    },
+    {
+      "id": "way/101185429",
+      "name": "London Street cottage (cream, red gable)",
+      "evidence": "Street View Apr 2025: cream weatherboard cottage, red gable facing the street, verandah with white posts",
+      "storeys": 1,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e6d9a8"
+      },
+      "trim": "#f7f7f3",
+      "roofColour": "#a5483a",
+      "eaves": 0.3,
+      "lower": {
+        "windows": 2,
+        "type": "single",
+        "door": 0.5,
+        "doorColour": "#7a3a2a"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#f7f7f3",
+        "fascia": "#f7f7f3",
+        "fasciaHeight": 0.15,
+        "colour": "#a5483a",
+        "depth": 1.6,
+        "height": 2.5
+      }
+    },
+    {
+      "id": "way/101185497",
+      "name": "London Street bungalow (white, red gable)",
+      "evidence": "Street View Apr 2025: white weatherboard bungalow, red-brown gable to the street",
+      "storeys": 1,
+      "roof": "gable-end",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#efeee8"
+      },
+      "trim": "#a0453a",
+      "roofColour": "#8f3f33",
+      "eaves": 0.3,
+      "lower": {
+        "windows": 2,
+        "type": "pair"
+      }
+    },
+    {
+      "id": "way/101185391",
+      "name": "71 London Street (former Pegasus Bay Fishing office)",
+      "evidence": "Street View Apr 2025: white two-storey with twin gables to the street, grey window bands",
+      "storeys": 2,
+      "gables": 2,
+      "wall": {
+        "cladding": "render",
+        "colour": "#efeee9"
+      },
+      "trim": "#5a6068",
+      "roofColour": "#4a4d50",
+      "eaves": 0.15,
+      "upper": {
+        "windows": 4,
+        "type": "pair"
+      },
+      "lower": {
+        "windows": 4,
+        "type": "single"
+      }
+    },
+    {
+      "id": "way/1318077385",
+      "name": "83 London Street",
+      "evidence": "Street View Apr 2025: light blue weatherboard house with hipped roof, above a stone retaining wall",
+      "storeys": 1,
+      "roof": "hip",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#a9bdd3"
+      },
+      "trim": "#f2f2ee",
+      "roofColour": "#55595d",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "single"
+      }
+    },
+    {
+      "id": "way/1318269140",
+      "name": "85 London Street (grey two-storey)",
+      "evidence": "Street View Apr 2025: blue-grey weatherboard, three windows above, red door and black garage door",
+      "storeys": 2,
+      "roof": "gable",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#8f9aa6"
+      },
+      "trim": "#f2f2ee",
+      "roofColour": "#6f7376",
+      "eaves": 0.3,
+      "upper": {
+        "windows": 3,
+        "type": "single"
+      },
+      "lower": {
+        "windows": 1,
+        "door": 0.42,
+        "doorColour": "#c8262c"
+      },
+      "garages": [
+        {
+          "at": 0.78,
+          "width": 2.4,
+          "height": 2.2,
+          "colour": "#2a2c2e"
+        }
+      ]
+    },
+    {
+      "id": "way/1318269139",
+      "name": "London Street house (cream, with old garage)",
+      "evidence": "Street View Apr 2025: cream weatherboard house set back behind a timber garage with an orange door",
+      "storeys": 1,
+      "roof": "gable",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e3d6b0"
+      },
+      "trim": "#f2f2ee",
+      "roofColour": "#55595d",
+      "eaves": 0.3,
+      "lower": {
+        "windows": 2,
+        "type": "single"
+      }
+    },
+    {
+      "id": "way/907626862",
+      "name": "London Street house (cream, verandah)",
+      "evidence": "Street View Apr 2025: cream weatherboard with dark roof and a front verandah",
+      "storeys": 1,
+      "roof": "gable",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e8dcc0"
+      },
+      "trim": "#f7f7f3",
+      "roofColour": "#3d4044",
+      "eaves": 0.3,
+      "lower": {
+        "windows": 2,
+        "type": "single",
+        "door": 0.5,
+        "doorColour": "#5a4a3a"
+      }
+    },
+    {
+      "id": "way/1318269138",
+      "name": "89 London Street (red roof, dormers)",
+      "evidence": "Street View Apr 2025: white weatherboard, red tiled roof with two dormers, red verandah",
+      "storeys": 1,
+      "roof": "gable",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#efeee8"
+      },
+      "trim": "#f7f7f3",
+      "roofColour": "#a8503e",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#7a3a2a"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#f7f7f3",
+        "fascia": "#b0453a",
+        "fasciaHeight": 0.15,
+        "colour": "#b0453a",
+        "depth": 1.8,
+        "height": 2.5
+      }
+    },
+    {
+      "id": "way/907626860",
+      "name": "London Street house (salmon, blue roof)",
+      "evidence": "Street View Apr 2025: salmon weatherboard with a blue roof and a garage",
+      "storeys": 1,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d99a84"
+      },
+      "trim": "#f7f7f3",
+      "roofColour": "#4f79b0",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "single"
+      },
+      "garages": [
+        {
+          "at": 0.2,
+          "width": 2.4,
+          "height": 2.2,
+          "colour": "#4f79b0"
+        }
+      ]
     }
   ]
 }

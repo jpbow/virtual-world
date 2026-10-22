@@ -335,7 +335,10 @@ def measure(name):
                 if rest.area>4:rear=rest
         fr=frame(main,t,n);facade=facade_line(f,shift)
         fit=next(iter(fit_roof(main,fr,dsm,floor,[kind])),None) if kind!='dsm' else None
-        if kind!='dsm' and fit is None:kind='flat';fit=fit_roof(main,fr,dsm,floor,['flat'])[0]
+        if kind!='dsm' and fit is None:
+            kind='flat';fit=next(iter(fit_roof(main,fr,dsm,floor,['flat'])),None)
+            # Too small or low for the LiDAR to separate from the ground: a labelled 2.6 m default.
+            if fit is None:fit=dict(kind='flat',eave=floor+2.6,slope=0.,rmse=None,ridge=2.6);P.log(' ',b['id'],'no LiDAR roof; 2.6 m default')
         parapet=None
         # Side and rear parapets; a taller false front is built separately on the facade.
         if kind=='flat' and not b.get('open'):parapet=min(.4,(b.get('parapet') or {}).get('above',.4))
@@ -346,8 +349,18 @@ def measure(name):
             pp=poly.intersection(rect(*part['box']));pp=max(getattr(pp,'geoms',[pp]),key=lambda g:g.area)
             pf=frame(pp,t,n);pfit=fit_roof(pp,pf,dsm,floor,[part['roof']])
             if pfit:parts.append(block(pp,part['roof'],pfit[0],pf,floor,0.,.25 if part['roof']=='flat' else None));main=main.difference(pp.buffer(.01))
+        # Side-by-side gables facing the street (a twin-gable roof): equal strips along the facade.
+        if b.get('gables',1)>1:
+            mf=frame(main,t,n);w=-n;k=b['gables'];cuts=np.linspace(mf['u0'],mf['u1'],k+1);strips=[]
+            for u0,u1 in zip(cuts,cuts[1:]):
+                band=Polygon([t*u0+w*-1e4,t*u1+w*-1e4,t*u1+w*1e4,t*u0+w*1e4]);sp_=main.intersection(band)
+                strips.append(max(getattr(sp_,'geoms',[sp_]),key=lambda g:g.area))
+            main=strips[0];kind='gable-end'
+            for sp_ in strips[1:]:
+                pf=frame(sp_,t,n);pfit=fit_roof(sp_,pf,dsm,floor,['gable-end'])
+                if pfit:parts.append(block(sp_,'gable-end',pfit[0],pf,floor,overhang,None))
         main=max(getattr(main,'geoms',[main]),key=lambda g:g.area)
-        if parts:fr=frame(main,t,n);fit=fit_roof(main,fr,dsm,floor,[kind])[0]
+        if parts:fr=frame(main,t,n);fit=next(iter(fit_roof(main,fr,dsm,floor,[kind]) or fit_roof(main,fr,dsm,floor,['flat'])),None);kind=fit['kind'] if fit else kind
         blocks=[block(main,kind,fit,fr,floor,overhang,parapet,dsm)]+parts
         if rear is not None:
             rf=frame(rear,t,n);rfits=fit_roof(rear,rf,dsm,floor,['flat','shed'])
@@ -363,7 +376,8 @@ def measure(name):
                 for s in np.linspace(.2,L-.2,k):
                     p=a+s*tt+(ver['depth']-.25)*n;posts.append([round(float(p[0]),3),round(float(p[1]),3),round(float(dem(*p)),2)])
         fs=stations(facade);foot=dem(*(fs+1.5*n[None]).T)
-        out.append(dict(id=b['id'],name=b.get('name'),floor=round(floor,2),floorLeft=round(float(foot[0]),2),floorRight=round(float(foot[-1]),2),
+        inside=float(np.median(dem(*(fs-1.*n[None]).T)))                  # the building's own ground, behind the facade
+        out.append(dict(id=b['id'],name=b.get('name'),floor=round(floor,2),groundInside=round(inside,2),floorLeft=round(float(foot[0]),2),floorRight=round(float(foot[-1]),2),
                         foundation=round(float(min(dem.pixels(poly)[2].min(),foot.min()))-.6,2),facade=facade,shift=shift,edge=edge,
                         blocks=blocks,parapetTop=round(fz,2),verandah=ver,posts=posts,fits=fits[:3],roofColour=feature.get('roofColor')))
     return spec,out
