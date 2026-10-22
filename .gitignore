@@ -13,3 +13,9 @@ public/plants/imported/
 # Local secrets, e.g. VITE_LINZ_BASEMAPS_KEY
 .env.local
 .env.*.local
+
+# Blender save backups (buildings/*.blend)
+*.blend1
+
+# Generated street-building models (tools/street_buildings.py)
+public/buildings/

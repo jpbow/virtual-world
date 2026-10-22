@@ -11,6 +11,7 @@ import {loadGroundTextures,disposeGroundTextures,type GroundTextures} from './gr
 import {choosePlantView} from './plant-view';
 import {crownGeometry,crownColour} from './crowns';
 import {BasemapTiles} from './basemap-tiles';
+import {loadStreetBuildings,type StreetBuildings} from './street-buildings';
 
 const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const canvas=el<HTMLCanvasElement>('world'),loading=el('loading'),detail=el('loading-detail');
@@ -24,7 +25,7 @@ const controls=new OrbitControls(camera,canvas);controls.target.set(-200,100,-10
 scene.add(new THREE.HemisphereLight('#f3f5eb','#8b9a82',2));const sun=new THREE.DirectionalLight('#fff2d2',2.1);sun.position.set(-5000,8000,-4000);scene.add(sun);
 const buildingsGroup=new THREE.Group(),roadsGroup=new THREE.Group(),vegetationGroup=new THREE.Group(),terrainGroup=new THREE.Group();scene.add(buildingsGroup,roadsGroup,vegetationGroup,terrainGroup);
 const nativePlants=new NativePlants(heightAt);vegetationGroup.add(nativePlants.group);
-let basemap:BasemapTiles|null=null;
+let basemap:BasemapTiles|null=null,streetBuildings:StreetBuildings|null=null;
 const pickMeshes:THREE.Mesh[]=[];
 let manifest:Manifest,features:Features,elevation:Float32Array;
 let imagery=false,wireframe=false,fly=false,flySpeed=100,loaded=0,activeLoads=0,failedTiles=0,disposed=false,worldInitialized=false;
@@ -35,7 +36,7 @@ const textureLoader=new THREE.TextureLoader();
 const fallbackTiles=new Map<string,THREE.Mesh>();
 let fallbackMaterial:THREE.MeshStandardMaterial,overviewTexture:THREE.Texture,overviewMask:THREE.Texture,landscapeControls:THREE.Texture,terrainRelief:THREE.Texture,groundTextures:GroundTextures;
 const tileStates=new Map<string,{info:TileInfo;mesh:THREE.Mesh;heights:Float32Array;texture:THREE.Texture;mask:THREE.Texture;step:number}>(),pending=new Set<string>(),failedIds=new Set<string>();
-const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get basemap(){return basemap?.status;},updateBasemap:()=>updateBasemap(),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;}};
+const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get basemap(){return basemap?.status;},updateBasemap:()=>updateBasemap(),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;},get streetBuildings(){return streetBuildings?[...streetBuildings.models.keys()]:null;}};
 (window as unknown as {__world:typeof debug}).__world=debug;
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}window.addEventListener('resize',resize);resize();
 function setMessage(title:string,message:string,error=false){loading.hidden=false;loading.classList.toggle('error',error);el('loading-title').textContent=title;detail.textContent=message;el('retry').hidden=!error;}
@@ -86,7 +87,11 @@ async function makeFallbackTerrain(){
     const mesh=new THREE.Mesh(geometry,fallbackMaterial);mesh.position.set(info.x,0,-info.north);mesh.name=`Terrain overview ${info.id}`;terrainGroup.add(mesh);fallbackTiles.set(info.id,mesh);
   }
 }
-function makeBuildings(){const g=buildingGeometry(features.buildings),m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.9,side:THREE.DoubleSide});const walls=new THREE.Mesh(g.walls,m),roofs=new THREE.Mesh(g.roofs,m);walls.name='Building walls';roofs.name='Building roofs';walls.userData.owners=g.wallOwners;roofs.userData.owners=g.roofOwners;buildingsGroup.add(walls,roofs);pickMeshes.push(walls,roofs);}
+function makeBuildings(skip=new Set<string>()){
+  // Rebuilding without the footprints that detailed models replace; owners still index features.buildings.
+  for(const mesh of buildingsGroup.children.filter(o=>o.name==='Building walls'||o.name==='Building roofs') as THREE.Mesh[]){mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();buildingsGroup.remove(mesh);pickMeshes.splice(pickMeshes.indexOf(mesh),1);}
+  const kept=features.buildings.flatMap((b,i)=>skip.has(b.id)?[]:[i]);
+  const g=buildingGeometry(kept.map(i=>features.buildings[i])),m=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.9,side:THREE.DoubleSide});const walls=new THREE.Mesh(g.walls,m),roofs=new THREE.Mesh(g.roofs,m);walls.name='Building walls';roofs.name='Building roofs';walls.userData.owners=g.wallOwners.map(o=>kept[o]);roofs.userData.owners=g.roofOwners.map(o=>kept[o]);buildingsGroup.add(walls,roofs);pickMeshes.push(walls,roofs);}
 function makeRoads(textures:Record<RoadSurface,RoadTextures>){
   for(const surface of ['track','footpath','road'] as RoadSurface[]){
     const mesh=new THREE.Mesh(roadGeometry(features.roads,surface,heightAt),makeRoadSurfaceMaterial(surface,textures[surface]));
@@ -157,7 +162,7 @@ el('panel-toggle').addEventListener('click',()=>{const content=el('panel-content
 if(innerWidth<700){el('panel-content').hidden=true;el('panel-toggle').setAttribute('aria-expanded','false');}
 function closeSelection(){selectedBuilding=null;el('inspector').hidden=true;if(selectionOutline){scene.remove(selectionOutline);selectionOutline.geometry.dispose();(selectionOutline.material as THREE.Material).dispose();selectionOutline=null;}}
 el('close-inspector').addEventListener('click',closeSelection);
-function selectBuilding(b:Building){closeSelection();selectedBuilding=b;el('building-title').textContent=b.name||'Lyttelton building';const source={dsm:'Measured DSM',osm:'OSM attribute',default:'Procedural default'}[b.roof.source];const rows=[['Height',`${b.roof.height.toFixed(1)} m`],['Roof',b.roof.kind==='gable'?'Fitted gable':'Flat approximation'],['Height source',source],['Roof fit',b.roof.error===null?'Not measured':`${b.roof.error.toFixed(2)} m RMSE`]];el('building-details').replaceChildren();for(const [term,value] of rows){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=term;dd.textContent=value;el('building-details').append(dt,dd);}
+function selectBuilding(b:Building){closeSelection();selectedBuilding=b;el('building-title').textContent=b.name||'Lyttelton building';const source={dsm:'Measured DSM',osm:'OSM attribute',default:'Procedural default'}[b.roof.source];const model=streetBuildings?.models.get(b.id);const rows=model?[['Model','Detailed: Blender, from 1 m LiDAR and street photos'],['Facade evidence',model.evidence]]:[['Height',`${b.roof.height.toFixed(1)} m`],['Roof',b.roof.kind==='gable'?'Fitted gable':'Flat approximation'],['Height source',source],['Roof fit',b.roof.error===null?'Not measured':`${b.roof.error.toFixed(2)} m RMSE`]];if(model?.name)el('building-title').textContent=model.name;el('building-details').replaceChildren();for(const [term,value] of rows){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=term;dd.textContent=value;el('building-details').append(dt,dd);}
   const a=document.createElement('a');a.href=`https://www.openstreetmap.org/${b.id}`;a.target='_blank';a.rel='noopener';a.textContent='View OSM feature';const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent='Footprint';dd.append(a);el('building-details').append(dt,dd);el('inspector').hidden=false;selectionOutline=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(b.ring.map(p=>new THREE.Vector3(p[0],b.ground+b.roof.height+1,-p[1]))),new THREE.LineBasicMaterial({color:'#f3c45e',depthTest:false}));selectionOutline.renderOrder=10;scene.add(selectionOutline);}
 const raycaster=new THREE.Raycaster();
 canvas.addEventListener('pointerdown',e=>{canvas.focus();dragging=true;startX=lastX=e.clientX;startY=lastY=e.clientY;if(fly)canvas.setPointerCapture(e.pointerId);});
@@ -178,5 +183,12 @@ async function start(){try{manifest=await get<Manifest>('manifest.json');debug.m
       const surfaceCredit=document.createElement('p'),surfaceLink=document.createElement('a');surfaceLink.href='https://polyhaven.com';surfaceLink.target='_blank';surfaceLink.rel='noopener';surfaceLink.textContent='Ground and road scans: Poly Haven and ambientCG · CC0';surfaceCredit.append(surfaceLink);el('sources').append(surfaceCredit);
       const credited=new Set<string>();for(const credit of nativePlants.credits){const representative=credit.role==='representative',label=representative?'Representative trees and bushes':credit.species;if(credited.has(label+credit.source))continue;credited.add(label+credit.source);const p=document.createElement('p'),a=document.createElement('a');a.href=credit.source;a.target='_blank';a.rel='noopener';a.textContent=`${label} — ${credit.author} (${credit.license})`;p.append(a);el('sources').append(p);}
       if(nativePlants.status.species.length){const button=document.createElement('button');button.textContent='Native plants';button.id='native-plant-view';button.addEventListener('click',()=>{const view=choosePlantView(nativePlants.previewOptions(),p=>nativePlants.neighbours(p),features.buildings,heightAt,THREE.MathUtils.degToRad(camera.fov),camera.aspect);if(!view)return;setMode(false);closeSelection();document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false');});camera.position.copy(view.position);controls.target.copy(view.target);controls.update();nativePlants.update(camera);});document.querySelector('.views')!.append(button);}
-    });})();}catch(error){console.error(error);setMessage('Local world data is not ready','Run npm run data in lyttelton-world, then reload. Details: '+(error instanceof Error?error.message:String(error)),true);}}
-window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();basemap?.dispose();if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();
+    });
+      // Detailed street-front buildings (npm run buildings) replace their generic extrusions.
+      streetBuildings=await loadStreetBuildings('london',features.buildings);
+      if(streetBuildings){
+        buildingsGroup.add(streetBuildings.group);pickMeshes.push(...streetBuildings.meshes);makeBuildings(streetBuildings.replaced);
+        const note=document.createElement('p');note.id='street-buildings-info';note.textContent=`London Street: ${streetBuildings.models.size} buildings modelled in Blender. Footprints from OSM; heights, roof pitch, facade line and verandah depth from LINZ 1 m LiDAR (Christchurch 2024-25, CC BY 4.0); facades, colours and signs from street photos (Google Street View April 2025 for reference, Wikimedia Commons). Window sizes and colours are estimates.`;el('sources').append(note);
+      }
+    })();}catch(error){console.error(error);setMessage('Local world data is not ready','Run npm run data in lyttelton-world, then reload. Details: '+(error instanceof Error?error.message:String(error)),true);}}
+window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();basemap?.dispose();streetBuildings?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();

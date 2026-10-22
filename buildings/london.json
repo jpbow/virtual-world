@@ -1,0 +1,621 @@
+{
+  "title": "London Street, Oxford Street to Canterbury Street",
+  "notes": "Facade notes come from street-level photos: Google Street View (April 2025, viewed for reference only, not copied) and Wikimedia Commons (credited per building). Heights, roof pitch, footpath level and verandah depth are measured from LINZ 1 m LiDAR (Christchurch 2024-25) by tools/street_buildings.py; footprints are OSM. Colours are estimated by eye from the photos. Window and door counts follow the photos; their exact sizes and spacing are typical, not measured.",
+  "buildings": [
+    {
+      "id": "way/101185432",
+      "name": "34 London Street (real estate office)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "render",
+        "colour": "#ecebe7"
+      },
+      "trim": "#d7d6d2",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.5
+      },
+      "shopfront": {
+        "bays": 2,
+        "door": 0.5,
+        "frame": "#c9c9c6",
+        "stall": "#ecebe7"
+      },
+      "sign": {
+        "text": "HOME",
+        "colour": "#e7e6e1",
+        "textColour": "#3d4a5a",
+        "on": "facade"
+      }
+    },
+    {
+      "id": "way/101185348",
+      "name": "London Street Dairy (MetroMart)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "render",
+        "colour": "#e3e1dc"
+      },
+      "trim": "#6b2638",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.6
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.45,
+        "frame": "#b9b9b6",
+        "stall": "#6b2638"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": false,
+        "fascia": "#6b2638",
+        "fasciaHeight": 0.7,
+        "text": "MetroMart",
+        "textColour": "#f2f2f2"
+      }
+    },
+    {
+      "id": "way/156304463",
+      "name": "Air, Sea & Land Gallery (Lyttelton Framing)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "render",
+        "colour": "#e3e1dc"
+      },
+      "trim": "#1f3350",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.6
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.15,
+        "frame": "#d9d9d6",
+        "stall": "#2c4a9a",
+        "stallMaterial": "tile"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": false,
+        "fascia": "#1f3350",
+        "fasciaHeight": 0.7,
+        "text": "AIR, SEA & LAND GALLERY",
+        "textColour": "#f0f0ec"
+      }
+    },
+    {
+      "id": "way/156304462",
+      "name": "London Fish and Chips",
+      "evidence": "Street View Apr 2025",
+      "storeys": 1,
+      "wall": {
+        "cladding": "render",
+        "colour": "#e3e1dc"
+      },
+      "trim": "#7a2235",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.6
+      },
+      "shopfront": {
+        "bays": 2,
+        "door": 0.15,
+        "frame": "#d9d9d6",
+        "stall": "#2f4fa0",
+        "stallMaterial": "tile"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": false,
+        "fascia": "#7a2235",
+        "fasciaHeight": 0.7,
+        "text": "LONDON FISH & CHIPS",
+        "textColour": "#f4f1ea"
+      }
+    },
+    {
+      "id": "way/101185442",
+      "name": "Eruption Brewing (26 London Street)",
+      "evidence": "Street View Apr 2025: white tiled ground floor with timber doors, roof deck behind a black balustrade under a flat canopy",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "tile",
+        "colour": "#ecebe6"
+      },
+      "trim": "#2b2b2b",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.15
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.25,
+        "frame": "#8a5a32",
+        "stall": "#ecebe6",
+        "stallMaterial": "tile"
+      },
+      "deck": {
+        "railing": "#222222",
+        "canopy": "#3a3c3e",
+        "depth": 0.75
+      }
+    },
+    {
+      "id": "way/101185453",
+      "name": "Nama",
+      "evidence": "Street View Apr 2025",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "board",
+        "colour": "#2a2b2d"
+      },
+      "trim": "#1b1c1e",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.6
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.7,
+        "frame": "#1b1c1e",
+        "stall": "#2a2b2d"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": false,
+        "fascia": "#1b1c1e",
+        "fasciaHeight": 0.6,
+        "text": "Nama",
+        "textColour": "#e8b3b8"
+      }
+    },
+    {
+      "id": "way/101185439",
+      "name": "Coffee Culture (J. Voyce & Co, Ships Providores)",
+      "evidence": "Street View Apr 2025; Commons: Lyttelton Photowalk Oct 2025 MRD 12 (CC BY 4.0), Lyttelton 3 (2016, CC BY 2.0)",
+      "storeys": 2,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#bcc3c2"
+      },
+      "trim": "#f2f2ee",
+      "segments": [
+        {
+          "width": 0.34,
+          "parapet": {
+            "shape": "gable",
+            "pitch": 40,
+            "barge": "#f2f2ee"
+          },
+          "windows": 1
+        },
+        {
+          "width": 0.66,
+          "parapet": {
+            "shape": "arch",
+            "above": 1.6,
+            "rise": 0.7,
+            "text": "J.VOYCE & Co",
+            "text2": "SHIPS PROVIDORES",
+            "textColour": "#3a3f44"
+          },
+          "windows": 2,
+          "windowType": "pair",
+          "hood": true
+        }
+      ],
+      "shopfront": {
+        "bays": 4,
+        "door": 0.55,
+        "frame": "#f2f2ee",
+        "stall": "#bcc3c2"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": true,
+        "post": "#f2f2ee",
+        "fascia": "#f2f2ee",
+        "fasciaHeight": 0.55,
+        "text": "COFFEE CULTURE",
+        "textColour": "#5a3826"
+      }
+    },
+    {
+      "id": "way/101185356",
+      "name": "Civil & Naval (16 London Street)",
+      "evidence": "Street View Apr 2025: weathered timber false front with a faded painted sign",
+      "storeys": 1,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#8f8a80"
+      },
+      "trim": "#6f6a61",
+      "parapet": {
+        "shape": "flat",
+        "above": 1.4
+      },
+      "shopfront": {
+        "bays": 2,
+        "door": 0.75,
+        "frame": "#7b3b22",
+        "stall": "#7b3b22"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#efefea",
+        "fascia": "#efefea",
+        "fasciaHeight": 0.25,
+        "colour": "#b7bab8"
+      },
+      "roof": "gable"
+    },
+    {
+      "id": "way/101185451",
+      "name": "Harbour Co-op (12 London Street)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#dcc37c"
+      },
+      "trim": "#2f5a3c",
+      "eaves": 0.35,
+      "upper": {
+        "windows": 4,
+        "type": "sash"
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.38,
+        "frame": "#2f5a3c",
+        "stall": "#dcc37c"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#2f4a35",
+        "fascia": "#2f4a35",
+        "fasciaHeight": 0.45,
+        "text": "HARBOUR  CO-OP     ORGANIC & WHOLEFOODS",
+        "textColour": "#e9dfc0",
+        "colour": "#a9acaa"
+      }
+    },
+    {
+      "id": "way/156298838",
+      "name": "9 London Street (Sweet Porridge, Lyttelton Boy's Souvlaki)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "board",
+        "colour": "#82a097"
+      },
+      "trim": "#2a2a2a",
+      "eaves": 0.3,
+      "upper": {
+        "windows": 4,
+        "type": "single"
+      },
+      "shopfront": {
+        "bays": 4,
+        "door": 0.55,
+        "frame": "#3a2a20",
+        "stall": "#efede6"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": false,
+        "fascia": "#1f2022",
+        "fasciaHeight": 0.5,
+        "panels": [
+          {
+            "at": 0.2,
+            "width": 0.25,
+            "colour": "#3a1f1a",
+            "text": "BOY'S SOUVLAKI",
+            "textColour": "#f0a040"
+          },
+          {
+            "at": 0.62,
+            "width": 0.25,
+            "colour": "#e6c34a",
+            "text": "SWEET PORRIDGE",
+            "textColour": "#5a2a10"
+          }
+        ]
+      }
+    },
+    {
+      "id": "way/101185375",
+      "name": "3 London Street, covered seating",
+      "evidence": "Street View Apr 2025: open-sided canopy on posts beside the restaurant",
+      "storeys": 1,
+      "roof": "flat",
+      "trim": "#4a4038",
+      "open": true,
+      "roofColour": "#c8ccc8"
+    },
+    {
+      "id": "way/1318072380",
+      "name": "Everest Indian Restaurant (3 London Street)",
+      "evidence": "Street View Apr 2025. OSM puts the Everest tags on the small polygon next door; the LiDAR (2.7 m, open) and photos show that one is the covered outdoor seating, and this footprint is the restaurant.",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "render",
+        "colour": "#b4aa8a"
+      },
+      "trim": "#8d8f8c",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.6
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.45,
+        "frame": "#8a5a2e",
+        "stall": "#b4aa8a"
+      },
+      "sign": {
+        "text": "EVEREST",
+        "colour": "#3b6fb5",
+        "textColour": "#ffffff",
+        "on": "facade",
+        "width": 0.5
+      }
+    },
+    {
+      "id": "way/101185496",
+      "name": "Lyttelton Library (Te Ūaka)",
+      "evidence": "Street View Apr 2025; Commons: Lyttelton Photowalk 2025-10-11 lyttelton library (CC BY-SA 4.0). Roof from LiDAR: ~5 m main roof, a ~10 m tower at the north-east corner and a gabled wing at the back; the pitched black roof forms seen in the photos are simplified to the main roof level.",
+      "storeys": 1,
+      "roof": "flat",
+      "wall": {
+        "cladding": "render",
+        "colour": "#f1f0ec"
+      },
+      "trim": "#26282a",
+      "roofMaterial": "seam",
+      "roofColour": "#2c2e30",
+      "shopfront": {
+        "bays": 4,
+        "door": 0.62,
+        "frame": "#26282a",
+        "stall": "#f1f0ec",
+        "glazed": 0.55
+      },
+      "parapet": {
+        "shape": "flat",
+        "above": 0.3
+      },
+      "parts": [
+        {
+          "box": [
+            64.6,
+            41.4,
+            72,
+            47
+          ],
+          "roof": "flat",
+          "note": "entrance tower, ~10 m"
+        },
+        {
+          "box": [
+            57.4,
+            28,
+            63.6,
+            35.2
+          ],
+          "roof": "gable-end",
+          "note": "gabled wing on the harbour side"
+        }
+      ]
+    },
+    {
+      "id": "way/217383276",
+      "name": "31 London Street (Sweet Thursday, Henry Trading)",
+      "replaces": [
+        "way/101185409",
+        "way/156569415"
+      ],
+      "evidence": "Street View Apr 2025; Commons: Lyttelton Photowalk Oct 2025 MRD 16 (CC BY 4.0)",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#8c4034"
+      },
+      "trim": "#d8cdb0",
+      "eaves": 0.55,
+      "brackets": true,
+      "upper": {
+        "windows": 2,
+        "type": "pair"
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.5,
+        "frame": "#6b5a48",
+        "stall": "#8c4034"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#d8cdb0",
+        "fascia": "#8c4a3a",
+        "fasciaHeight": 0.2,
+        "colour": "#9a5442"
+      }
+    },
+    {
+      "id": "way/101185455",
+      "name": "J. D. Bundy building (Lyttelton Coffee Company, 29 London Street)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 2,
+      "wall": {
+        "cladding": "render",
+        "colour": "#a2a7aa"
+      },
+      "trim": "#8a8f92",
+      "parapet": {
+        "shape": "arch",
+        "above": 1.3,
+        "rise": 0.9,
+        "text": "J.D. BUNDY",
+        "textColour": "#7a7f82"
+      },
+      "upper": {
+        "windows": 1,
+        "type": "louvre",
+        "colour": "#6b4f3a"
+      },
+      "mural": {
+        "colour": "#d8494a",
+        "rind": "#3f8a3a",
+        "at": 0.22
+      },
+      "shopfront": {
+        "bays": 5,
+        "door": 0.5,
+        "frame": "#3b2a20",
+        "stall": "#3b2a20",
+        "transom": true
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": true,
+        "post": "#3b3d3f",
+        "fascia": "#2d2f31",
+        "fasciaHeight": 0.35
+      }
+    },
+    {
+      "id": "way/353351583",
+      "name": "Pharmacy and FreshChoice (London Street frontage)",
+      "evidence": "Street View Apr 2025",
+      "storeys": 1,
+      "wall": {
+        "cladding": "render",
+        "colour": "#ecebe6"
+      },
+      "trim": "#d0cfca",
+      "parapet": {
+        "shape": "flat",
+        "above": 0.9
+      },
+      "segments": [
+        {
+          "width": 0.42,
+          "sign": {
+            "text": "PHARMACY",
+            "colour": "#f2f2ee",
+            "textColour": "#3d4f8f"
+          }
+        },
+        {
+          "width": 0.58,
+          "sign": {
+            "text": "FreshChoice",
+            "colour": "#1e64c8",
+            "textColour": "#ffffff"
+          }
+        }
+      ],
+      "shopfront": {
+        "bays": 6,
+        "door": 0.3,
+        "frame": "#c8c8c4",
+        "stall": "#ecebe6"
+      },
+      "verandah": {
+        "type": "flat",
+        "posts": false,
+        "fascia": "#f2f2ee",
+        "fasciaHeight": 0.35
+      }
+    },
+    {
+      "id": "way/101185448",
+      "name": "The Lyttelton Arms (17 London Street)",
+      "evidence": "Street View Apr 2025; Commons: Lytellton (2020, CC BY-SA 2.0)",
+      "storeys": 1,
+      "wall": {
+        "cladding": "board",
+        "colour": "#3b3d40"
+      },
+      "trim": "#2c2d2f",
+      "parapet": {
+        "shape": "flat",
+        "above": 2.2,
+        "text": "THE LYTTELTON ARMS",
+        "textColour": "#f2f2f0"
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.3,
+        "frame": "#7a5530",
+        "stall": "#3b3d40"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#3b3d40",
+        "fascia": "#9a7a55",
+        "fasciaHeight": 0.2,
+        "colour": "#c8cac6"
+      }
+    },
+    {
+      "id": "way/101185480",
+      "name": "The Lyttel Kiwi (15 London Street)",
+      "evidence": "Street View Apr 2025; Commons: Lyttelton Photowalk Oct 2025 MRD 12 (CC BY 4.0)",
+      "storeys": 2,
+      "roof": "hip",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#efeee8"
+      },
+      "trim": "#f7f7f3",
+      "eaves": 0.35,
+      "frieze": {
+        "text": "REAL ESTATE AGENTS       AUCTIONEERS",
+        "textColour": "#2b2b2b"
+      },
+      "upper": {
+        "windows": 3,
+        "type": "sash",
+        "pairs": [
+          1
+        ]
+      },
+      "shopfront": {
+        "bays": 3,
+        "door": 0.2,
+        "frame": "#efeee8",
+        "stall": "#efeee8"
+      },
+      "verandah": {
+        "type": "sloped",
+        "posts": true,
+        "post": "#efeee8",
+        "fascia": "#efeee8",
+        "fasciaHeight": 0.25,
+        "colour": "#9ea2a3",
+        "brackets": true
+      }
+    }
+  ]
+}
