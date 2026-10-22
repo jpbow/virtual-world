@@ -12,16 +12,20 @@ each mapped to a prefab, and are written to public/street-kit/<name>.json:
   kerb of its approach (traffic keeps left), facing oncoming traffic.
 - Christchurch City Council park asset registers (CC BY 4.0): seats, bins (style picks the prefab),
   bollards and light poles.
+- Mapillary map features (CC BY-SA 4.0), detected in street-level photos and triangulated: litter bins,
+  benches, bike racks, mailboxes, street lights, and stop, give way, parking and no-parking/no-stopping signs.
+  Needs a free access token as MAPILLARY_TOKEN (environment or .env.local); without one it is skipped.
+  Detections in the carriageway move to the kerb; signs face their mapped `aligned_direction`.
 - The street inventory's placed street lights are left to it (tools/street_inventory.py); evidence within
   6 m of one is not placed twice.
 
-Items of one kind from different sources within 2.5 m are the same item. Anything else faces the nearest
-mapped road. Parking signs are in the kit but have no public location data here yet.
+Items of one kind from different sources within 2.5 m (4 m for Mapillary's triangulated positions) are the same
+item; earlier sources win. Anything else faces the nearest mapped road.
 
   npm run furniture -- --name london              gather evidence, place, and build the kit if missing
   npm run furniture -- --name london --kit        rebuild the kit from tools/blender_street_kit.py
 """
-import argparse,json,math,subprocess,sys
+import argparse,json,math,os,re,subprocess,sys
 from pathlib import Path
 import numpy as np
 import requests
@@ -37,6 +41,13 @@ OVERPASS=['https://overpass-api.de/api/interpreter','https://overpass.private.co
 CCC='https://gis.ccc.govt.nz/server/rest/services/OpenData/{}/query'
 CCC_LAYERS={'seat':'Furniture/FeatureServer/19','bin':'Furniture/FeatureServer/2','bollard':'Structure/FeatureServer/10','lightpole':'Furniture/FeatureServer/8'}
 SAME=2.5;LAMP_CLEAR=6.
+MAPILLARY='https://graph.mapillary.com/map_features'
+# Mapillary object values (first match wins) to kit prefabs. Parking signs carry no time limit, so they
+# use the plain P sign.
+MAPILLARY_KIT=[(r'^object--trash-can$','bin-compass'),(r'^object--bench$','bench'),(r'^object--bike-rack$','bike-hoop'),
+               (r'^object--mailbox$','post-box'),(r'^object--phone-booth$','payphone'),(r'^object--street-light$','lamp-ornamental'),
+               (r'^regulatory--stop--','sign-stop'),(r'^regulatory--yield--','sign-give-way'),(r'^information--parking--','sign-parking'),
+               (r'^regulatory--no-(parking|stopping)','sign-no-stopping')]
 
 
 def cached(path,fetch):
@@ -69,6 +80,29 @@ def ccc_assets(name,bounds):
     return out
 
 
+def mapillary_token():
+    if os.environ.get('MAPILLARY_TOKEN'):return os.environ['MAPILLARY_TOKEN'].strip()
+    env=P.ROOT/'.env.local'
+    for line in env.read_text().splitlines() if env.exists() else []:
+        if line.startswith('MAPILLARY_TOKEN=') and line.split('=',1)[1].strip():return line.split('=',1)[1].strip().strip('"\'')
+    return None
+
+
+def mapillary_features(name,bounds):
+    """Point features and traffic signs Mapillary has detected and triangulated in the area (cached)."""
+    token=mapillary_token();path=P.CACHE/f'street-furniture-{name}-mapillary.json'
+    if not token and not path.exists():P.log('  Mapillary skipped: set MAPILLARY_TOKEN in .env.local');return []
+    lon0,lat0=P.INVERSE.transform(bounds[0]+P.CX,bounds[1]+P.CY);lon1,lat1=P.INVERSE.transform(bounds[2]+P.CX,bounds[3]+P.CY)
+    def fetch():
+        out=[];url=MAPILLARY;params=dict(fields='id,object_value,object_type,geometry,aligned_direction,first_seen_at,last_seen_at',bbox=f'{lon0},{lat0},{lon1},{lat1}',limit=2000)
+        while url:
+            r=requests.get(url,params=params,headers={**UA,'Authorization':f'OAuth {token}'},timeout=60)
+            if not r.ok:sys.exit(f'Mapillary request failed ({r.status_code}): check MAPILLARY_TOKEN')
+            d=r.json();out+=d.get('data',[]);url=d.get('paging',{}).get('next');params=None
+        return out
+    return cached(path,fetch)
+
+
 def bearing(dx,dy):return math.degrees(math.atan2(dx,dy))%360
 
 
@@ -91,6 +125,13 @@ class Roads:
         if direction=='backward':t=-t
         left=np.array([-t[1],t[0]]);q=line.interpolate(s);p=np.array([q.x,q.y])+left*(road['width']/2+.6)
         return float(p[0]),float(p[1]),bearing(-t[0],-t[1])
+
+    def to_kerb(self,x,y):
+        """A footpath item detected in the carriageway, moved out to 0.6 m beyond the kerb."""
+        road,line=self.nearest(x,y);q=line.interpolate(line.project(Point(x,y)));d=Point(x,y).distance(q);half=road['width']/2
+        if d>=half+.3:return x,y
+        if d<.05:return x,y
+        k=(half+.6)/d;return q.x+(x-q.x)*k,q.y+(y-q.y)*k
 
 
 def gather(name):
@@ -124,7 +165,15 @@ def gather(name):
             elif kind=='bin':add('bin-bigbelly' if a.get('Style')=='Big Belly' else 'bin-compass',x,y,*ccc,f"Bin {a['BinID']}")
             elif kind=='bollard':add('bollard',x,y,*ccc,f"Bollard {a['BollardID']}")
             elif kind=='lightpole':add('lamp-park',x,y,*ccc,f"LightPole {a['LightPoleID']}",height=a.get('Height'))
-    # One item per kind within SAME metres (OSM first, then the council register); lamps clear of inventory lamps.
+    mly=('Mapillary','CC-BY-SA-4.0');unmatched={}
+    for f in mapillary_features(name,bounds):
+        value=f.get('object_value','');model=next((m for pattern,m in MAPILLARY_KIT if re.search(pattern,value)),None)
+        if not model:unmatched[value]=unmatched.get(value,0)+1;continue
+        lon,lat=f['geometry']['coordinates'][:2];x,y=P.FORWARD.transform(lon,lat);x,y=roads.to_kerb(x-P.CX,y-P.CY)
+        heading=f.get('aligned_direction') if model.startswith('sign') and f.get('aligned_direction') is not None else None
+        add(model,x,y,*mly,f"map_feature/{f['id']}",heading,tolerance=4.,lastSeen=f.get('last_seen_at'))
+    if unmatched:P.log('  Mapillary values without a prefab:',', '.join(f'{v} ({n})' for v,n in sorted(unmatched.items(),key=lambda kv:-kv[1])))
+    # One item per kind within SAME metres (OSM, then the council register, then Mapillary); lamps clear of inventory lamps.
     lamps=[]
     inventory=P.ROOT/f'public/inventory/{name}/objects.geojson'
     if inventory.exists():
@@ -132,7 +181,8 @@ def gather(name):
     out=[]
     for it in items:
         if it['model'].startswith('lamp') and any(math.hypot(it['x']-x,it['y']-y)<LAMP_CLEAR for x,y in lamps):continue
-        dup=next((o for o in out if o['model']==it['model'] and math.hypot(o['x']-it['x'],o['y']-it['y'])<SAME),None)
+        tol=max(SAME,it.pop('tolerance',SAME))
+        dup=next((o for o in out if o['model']==it['model'] and math.hypot(o['x']-it['x'],o['y']-it['y'])<tol),None)
         if dup:dup.setdefault('alsoIn',[]).append(f"{it['source']} {it['ref']}");continue
         out.append(it)
     return out
@@ -159,7 +209,7 @@ def main():
     from collections import Counter
     for (model,source),n in sorted(Counter((p['model'],p['source']) for p in placements).items()):P.log(f'  {model:<20} {n:3d}  {source}')
     out=PUBLIC/f'{args.name}.json'
-    out.write_text(json.dumps(dict(name=args.name,kit='street-kit.glb',sources={'OpenStreetMap':'© OpenStreetMap contributors, ODbL',
+    out.write_text(json.dumps(dict(name=args.name,kit='street-kit.glb',sources={'OpenStreetMap':'© OpenStreetMap contributors, ODbL','Mapillary':'Mapillary map features, CC BY-SA 4.0',
                     'Christchurch City Council':'Christchurch City Council park asset registers, CC BY 4.0'},placements=placements),indent=1))
     P.log('Street furniture',args.name,len(placements),'placements ->',out.relative_to(P.ROOT),'· kit',glb.relative_to(P.ROOT))
 

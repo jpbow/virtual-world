@@ -28,4 +28,22 @@ class FacingTests(unittest.TestCase):
         self.assertAlmostEqual(roads().facing(0,-6),0,places=6)
 
 
+class MapillaryTests(unittest.TestCase):
+    def model(self,value):
+        import re
+        return next((m for pattern,m in F.MAPILLARY_KIT if re.search(pattern,value)),None)
+
+    def test_values_map_to_prefabs(self):
+        self.assertEqual(self.model('object--trash-can'),'bin-compass')
+        self.assertEqual(self.model('regulatory--stop--g1'),'sign-stop')
+        self.assertEqual(self.model('information--parking--g3'),'sign-parking')
+        self.assertEqual(self.model('regulatory--no-stopping--g15'),'sign-no-stopping')
+        self.assertIsNone(self.model('object--manhole'))
+
+    def test_carriageway_detections_move_to_the_kerb(self):
+        x,y=roads().to_kerb(5,2)                                   # 2 m from the centreline of an 8 m street
+        self.assertAlmostEqual(x,5,places=6);self.assertAlmostEqual(y,4.6,places=6)
+        self.assertEqual(roads().to_kerb(5,6),(5,6))               # already on the footpath
+
+
 if __name__=='__main__':unittest.main()

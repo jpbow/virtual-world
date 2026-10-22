@@ -202,6 +202,23 @@ def sign_parking(minutes):
     return p
 
 
+def sign_parking_plain():
+    """A parking sign whose time limit is not recorded: blue panel, white P."""
+    p=Part('sign-parking');g=mat(**GREY);b=mat('parking blue','#1f4fa0',.5);w=mat('sign white','#f7f7f5',.5);back=mat('sign back','#a7adb1',.5,.6)
+    p.cyl(.03,0,2.5,g,8);p.plane([(-.2,-.04,2.05),(.2,-.04,2.05),(.2,-.04,2.45),(-.2,-.04,2.45)],b)
+    p.plane([(-.2,-.035,2.45),(.2,-.035,2.45),(.2,-.035,2.05),(-.2,-.035,2.05)],back);p.text('P',(0,-.045,2.25),.28,w)
+    return p
+
+
+def sign_give_way():
+    """NZ Give Way: inverted triangle, red border, white centre, 750 mm."""
+    p=Part('sign-give-way');g=mat(**GREY);r=mat('sign red','#c8102e',.5);w=mat('sign white','#f7f7f5',.5);back=mat('sign back','#a7adb1',.5,.6)
+    p.cyl(.03,0,2.5,g,8)
+    tri=lambda R,y:[(R*math.cos(math.radians(a)),y,2.15+R*math.sin(math.radians(a))) for a in (270,30,150)]
+    p.plane(tri(.43,-.04),r);p.plane(tri(.27,-.045),w);p.plane(tri(.43,-.035)[::-1],back)
+    return p
+
+
 def sign_no_stopping():
     p=Part('sign-no-stopping');g=mat(**GREY);r=mat('sign red','#c8102e',.5);bl=mat('no-stop blue','#1f4fa0',.5);back=mat('sign back','#a7adb1',.5,.6)
     p.cyl(.03,0,2.6,g,8);ring=lambda R,y:[(R*math.cos(2*math.pi*i/24),y,2.3+R*math.sin(2*math.pi*i/24)) for i in range(24)]
@@ -221,7 +238,7 @@ def flagpole():
 
 PREFABS=[lamp_ornamental,lamp_park,bin_compass,bin_bigbelly,lambda:bench('bench'),lambda:bench('bench-backless',back=False),picnic_table,bollard,bike_hoop,
          drinking_fountain,lambda:post_box('post-box','#d2232a','NZ Post'),lambda:post_box('post-box-dx','#14325a','DX Mail'),payphone,sign_stop,
-         *[(lambda m:lambda:sign_parking(m))(m) for m in (5,10,30,60,120)],sign_no_stopping,bus_stop,flagpole]
+         *[(lambda m:lambda:sign_parking(m))(m) for m in (5,10,30,60,120)],sign_parking_plain,sign_give_way,sign_no_stopping,bus_stop,flagpole]
 
 
 def build():
