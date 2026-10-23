@@ -151,6 +151,8 @@ Rebuild downloaded surface scans with `npm run assets:fetch`. This uses the Poly
 
 ### Detailed London Street buildings (Blender)
 
+**To do another street, follow [docs/street-buildings.md](docs/street-buildings.md)**: `--init` starts its spec, you describe each building from photos, and the build registers it with the viewer.
+
 `npm run buildings -- --name london` replaces the generic extruded boxes for 42 buildings along London Street, from the west end of the residential stretch to Canterbury Street, with Blender models: shopfronts, house windows and doors, garage and roller doors, false fronts and shaped parapets, verandahs with posts, signs and painted lettering, cladding (weatherboard, board and batten, corrugated iron, render, tile or brick) and hipped, gabled, twin-gabled or flat roofs. Houses and service buildings sit at their own ground level, so those above retaining walls or below the street keep their doors and windows where the photos show them.
 
 Each model combines three sources:

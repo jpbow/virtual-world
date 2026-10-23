@@ -13,7 +13,7 @@ import {crownGeometry,crownColour} from './crowns';
 import {BasemapTiles} from './basemap-tiles';
 import {loadStreetBuildings,type StreetBuildings} from './street-buildings';
 import {loadStreetKit,type StreetKit} from './street-kit';
-import {loadStreetCorridor,streetOutline,treesOutside,roadsWithStreet,type StreetCorridor} from './street-corridor';
+import {loadStreetCorridor,streetOutline,treesOutside,roadsWithStreet,listedSets,type StreetCorridor} from './street-corridor';
 
 const el=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 const canvas=el<HTMLCanvasElement>('world'),loading=el('loading'),detail=el('loading-detail');
@@ -27,7 +27,7 @@ const controls=new OrbitControls(camera,canvas);controls.target.set(-200,100,-10
 scene.add(new THREE.HemisphereLight('#f3f5eb','#8b9a82',2));const sun=new THREE.DirectionalLight('#fff2d2',2.1);sun.position.set(-5000,8000,-4000);scene.add(sun);
 const buildingsGroup=new THREE.Group(),roadsGroup=new THREE.Group(),vegetationGroup=new THREE.Group(),terrainGroup=new THREE.Group();scene.add(buildingsGroup,roadsGroup,vegetationGroup,terrainGroup);
 const nativePlants=new NativePlants(heightAt);vegetationGroup.add(nativePlants.group);
-let basemap:BasemapTiles|null=null,streetBuildings:StreetBuildings|null=null,streetKit:StreetKit|null=null,streetCorridor:StreetCorridor|null=null;
+let basemap:BasemapTiles|null=null,streetBuildings:StreetBuildings|null=null,streetKits:StreetKit[]=[],streetCorridors:StreetCorridor[]=[];
 const pickMeshes:THREE.Mesh[]=[];
 let manifest:Manifest,features:Features,elevation:Float32Array;
 let imagery=false,wireframe=false,fly=false,flySpeed=100,loaded=0,activeLoads=0,failedTiles=0,disposed=false,worldInitialized=false;
@@ -38,7 +38,7 @@ const textureLoader=new THREE.TextureLoader();
 const fallbackTiles=new Map<string,THREE.Mesh>();
 let fallbackMaterial:THREE.MeshStandardMaterial,overviewTexture:THREE.Texture,overviewMask:THREE.Texture,landscapeControls:THREE.Texture,terrainRelief:THREE.Texture,groundTextures:GroundTextures;
 const tileStates=new Map<string,{info:TileInfo;mesh:THREE.Mesh;heights:Float32Array;texture:THREE.Texture;mask:THREE.Texture;step:number}>(),pending=new Set<string>(),failedIds=new Set<string>();
-const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get basemap(){return basemap?.status;},updateBasemap:()=>updateBasemap(),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;},get streetBuildings(){return streetBuildings?[...streetBuildings.models.keys()]:null;},get streetKit(){return streetKit?.models??null;}};
+const debug={ready:false,manifest:null as Manifest|null,renderer,scene,camera,controls,tiles:tileStates,heightAt,nativePlants:nativePlants.status,updatePlants:()=>nativePlants.update(camera),get basemap(){return basemap?.status;},updateBasemap:()=>updateBasemap(),get selectedBuilding(){return selectedBuilding;},get fly(){return fly;},get streetBuildings(){return streetBuildings?[...streetBuildings.models.keys()]:null;},get streetKit(){return streetKits.length?Object.assign({},...streetKits.map(k=>k.models)):null;}};
 (window as unknown as {__world:typeof debug}).__world=debug;
 function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}window.addEventListener('resize',resize);resize();
 function setMessage(title:string,message:string,error=false){loading.hidden=false;loading.classList.toggle('error',error);el('loading-title').textContent=title;detail.textContent=message;el('retry').hidden=!error;}
@@ -177,7 +177,7 @@ function frame(){if(disposed)return;const elapsed=clock.getDelta(),dt=Math.min(e
   if(fly){move.set(Number(keys.has('KeyD')||keys.has('ArrowRight'))-Number(keys.has('KeyA')||keys.has('ArrowLeft')),0,Number(keys.has('KeyS')||keys.has('ArrowDown'))-Number(keys.has('KeyW')||keys.has('ArrowUp')));if(move.lengthSq()>0)move.normalize().applyQuaternion(camera.quaternion);move.y+=Number(keys.has('KeyE'))-Number(keys.has('KeyQ'));camera.position.addScaledVector(move,flySpeed*(keys.has('ShiftLeft')||keys.has('ShiftRight')?4:1)*dt);camera.position.x=THREE.MathUtils.clamp(camera.position.x,-7500,7500);camera.position.z=THREE.MathUtils.clamp(camera.position.z,-7500,7500);camera.position.y=THREE.MathUtils.clamp(camera.position.y,Math.max(4,heightAt(camera.position.x,camera.position.z)+4),9500);}else controls.update();
   plantTimer+=elapsed;if(plantTimer>.5){plantTimer=0;nativePlants.update(camera);}
   streamTimer+=elapsed;if(streamTimer>.35){streamTimer=0;stream();updateBasemap();}footerTimer+=elapsed;if(footerTimer>.25){footerTimer=0;el('camera-height').textContent=`${Math.round(camera.position.y).toLocaleString()} m elevation`;camera.getWorldDirection(direction);el('north-arrow').style.transform=`rotate(${Math.atan2(direction.x,-direction.z)*180/Math.PI}deg)`;}renderer.render(scene,camera);requestAnimationFrame(frame);}
-async function start(){try{manifest=await get<Manifest>('manifest.json');debug.manifest=manifest;if(manifest.version!==1||manifest.extentMeters!==10000||!manifest.surface)throw new Error('Unsupported world manifest');detail.textContent='Loading measured terrain and generated scenery…';[features,elevation]=await Promise.all([get<Features>(manifest.features),getFloats(manifest.elevation)]);if(elevation.length!==1002001)throw new Error('Unexpected world elevation size');landscapeControls=await textureLoader.loadAsync(`/world/${manifest.surface.landscapeControls}`);landscapeControls.colorSpace=THREE.NoColorSpace;terrainRelief=await textureLoader.loadAsync(`/world/${manifest.surface.terrainRelief}`);terrainRelief.colorSpace=THREE.NoColorSpace;const anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());let roadTextures:Record<RoadSurface,RoadTextures>;[groundTextures,roadTextures]=await Promise.all([loadGroundTextures(anisotropy),loadRoadTextures(anisotropy)]);await makeFallbackTerrain();makeWater();makeBuildings();const outline=await streetOutline('london');if(outline){features.roads=roadsWithStreet(features.roads,outline);features.trees=treesOutside(features.trees,outline);}makeRoads(roadTextures);makeTrees();fillSources();updateSummary();worldInitialized=true;stream();
+async function start(){try{manifest=await get<Manifest>('manifest.json');debug.manifest=manifest;if(manifest.version!==1||manifest.extentMeters!==10000||!manifest.surface)throw new Error('Unsupported world manifest');detail.textContent='Loading measured terrain and generated scenery…';[features,elevation]=await Promise.all([get<Features>(manifest.features),getFloats(manifest.elevation)]);if(elevation.length!==1002001)throw new Error('Unexpected world elevation size');landscapeControls=await textureLoader.loadAsync(`/world/${manifest.surface.landscapeControls}`);landscapeControls.colorSpace=THREE.NoColorSpace;terrainRelief=await textureLoader.loadAsync(`/world/${manifest.surface.terrainRelief}`);terrainRelief.colorSpace=THREE.NoColorSpace;const anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());let roadTextures:Record<RoadSurface,RoadTextures>;[groundTextures,roadTextures]=await Promise.all([loadGroundTextures(anisotropy),loadRoadTextures(anisotropy)]);await makeFallbackTerrain();makeWater();makeBuildings();for(const street of await listedSets('streets')){const outline=await streetOutline(street);if(outline){features.roads=roadsWithStreet(features.roads,outline);features.trees=treesOutside(features.trees,outline);}}makeRoads(roadTextures);makeTrees();fillSources();updateSummary();worldInitialized=true;stream();
     // Live high-resolution aerial reference; the local 1 m tiles are the offline fallback.
     basemap=new BasemapTiles(import.meta.env.VITE_LINZ_BASEMAPS_KEY,manifest.origin,heightAt,Math.min(8,renderer.capabilities.getMaxAnisotropy()));scene.add(basemap.group);void (async()=>{try{nativePlants.addModels(await generateFoliage(MODEL_CAPACITY));}catch(error){console.warn('Procedural foliage unavailable',error);}await nativePlants.load(()=>{
       const p=document.createElement('p');p.id='native-plant-info';
@@ -187,26 +187,27 @@ async function start(){try{manifest=await get<Manifest>('manifest.json');debug.m
       if(nativePlants.status.species.length){const button=document.createElement('button');button.textContent='Native plants';button.id='native-plant-view';button.addEventListener('click',()=>{const view=choosePlantView(nativePlants.previewOptions(),p=>nativePlants.neighbours(p),features.buildings,heightAt,THREE.MathUtils.degToRad(camera.fov),camera.aspect);if(!view)return;setMode(false);closeSelection();document.querySelectorAll<HTMLButtonElement>('[data-view]').forEach(b=>{b.classList.remove('selected');b.setAttribute('aria-pressed','false');});camera.position.copy(view.position);controls.target.copy(view.target);controls.update();nativePlants.update(camera);});document.querySelector('.views')!.append(button);}
     });
       // Detailed street-front buildings (npm run buildings) replace their generic extrusions.
-      streetBuildings=await loadStreetBuildings(['london','lyttelton'],features.buildings);
+      streetBuildings=await loadStreetBuildings(await listedSets('buildings'),features.buildings);
       if(streetBuildings){
         buildingsGroup.add(streetBuildings.group);pickMeshes.push(...streetBuildings.meshes);makeBuildings(streetBuildings.replaced);
         const note=document.createElement('p');note.id='street-buildings-info';note.textContent=`${streetBuildings.models.size.toLocaleString()} buildings modelled in Blender. Footprints from OSM; heights, roof form and pitch, facade line and verandah depth from LINZ 1 m LiDAR (Christchurch 2024-25, CC BY 4.0). London Street facades, colours and signs follow street photos (Google Street View April 2025 for reference, Wikimedia Commons); elsewhere in Lyttelton facades and colours are typical for each building's type, not observed.`;el('sources').append(note);
       }
       // Kerbs, gutters and footpaths along measured kerb lines (npm run street).
-      streetCorridor=await loadStreetCorridor('london',heightAt);
-      if(streetCorridor){
-        roadsGroup.add(streetCorridor.group);
-        const note=document.createElement('p'),link=document.createElement('a');note.id='street-corridor-info';
+      for(const street of await listedSets('streets')){
+        const streetCorridor=await loadStreetCorridor(street,heightAt);if(!streetCorridor)continue;
+        streetCorridors.push(streetCorridor);roadsGroup.add(streetCorridor.group);
+        const note=document.createElement('p'),link=document.createElement('a');note.className='street-corridor-info';
         note.append(`${streetCorridor.street}: kerbs, gutters, parking lanes and footpaths built in Blender along kerb lines measured from parked cars and zebra crossings in the 2025 LINZ 7.5 cm aerial (CC BY 4.0); footpaths reach the LiDAR-registered building line. Surfaces: `);
         link.href='https://sketchfab.com/3d-models/none-784358d2b44a43398079770d316b6de7';link.target='_blank';link.rel='noopener';link.textContent='modular kit city builder starter kit — Pieter Ferreira (CC BY 4.0)';
         note.append(link);el('sources').append(note);
       }
       // Street furniture kit placed from OSM and council asset records (npm run furniture).
       // Furniture stands on the corridor's footpaths where there is one, else on the terrain.
-      streetKit=await loadStreetKit('london',(x,z)=>streetCorridor?.surfaceAt(x,z)??heightAt(x,z));
-      if(streetKit){
-        scene.add(streetKit.group);
-        const note=document.createElement('p');note.id='street-kit-info';note.textContent=`Street furniture: ${streetKit.placed} items (${Object.entries(streetKit.models).map(([m,n])=>`${n} ${m}`).join(', ')}) from a reusable Blender kit, placed from ${Object.values(streetKit.sources).join('; ')}. Kit styles follow London Street photos; sizes are typical.`;el('sources').append(note);
+      const groundAt=(x:number,z:number)=>{for(const c of streetCorridors){const y=c.surfaceAt(x,z);if(y!==null)return y;}return heightAt(x,z);};
+      for(const area of await listedSets('street-kit')){
+        const streetKit=await loadStreetKit(area,groundAt);if(!streetKit)continue;
+        streetKits.push(streetKit);scene.add(streetKit.group);
+        const note=document.createElement('p');note.className='street-kit-info';note.textContent=`Street furniture: ${streetKit.placed} items (${Object.entries(streetKit.models).map(([m,n])=>`${n} ${m}`).join(', ')}) from a reusable Blender kit, placed from ${Object.values(streetKit.sources).join('; ')}. Kit styles follow London Street photos; sizes are typical.`;el('sources').append(note);
       }
     })();}catch(error){console.error(error);setMessage('Local world data is not ready','Run npm run data in lyttelton-world, then reload. Details: '+(error instanceof Error?error.message:String(error)),true);}}
-window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();basemap?.dispose();streetBuildings?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});streetKit?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});streetCorridor?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();
+window.addEventListener('beforeunload',()=>{disposed=true;for(const id of tileStates.keys())disposeTile(id);for(const mesh of fallbackTiles.values())mesh.geometry.dispose();fallbackMaterial?.dispose();overviewTexture?.dispose();overviewMask?.dispose();landscapeControls?.dispose();terrainRelief?.dispose();nativePlants.dispose();basemap?.dispose();streetBuildings?.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});for(const k of [...streetKits,...streetCorridors])k.group.traverse(o=>{if(o instanceof THREE.Mesh)o.geometry.dispose();});if(groundTextures)disposeGroundTextures(groundTextures);controls.dispose();renderer.dispose();});frame();void start();

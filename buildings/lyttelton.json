@@ -9,9 +9,6 @@
       1100
     ],
     "portBelow": -60,
-    "exclude": [
-      "london"
-    ],
     "chunk": 400
   },
   "buildings": []

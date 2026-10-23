@@ -12,6 +12,9 @@ buildings/<name>.blend for editing and exported to public/buildings/<name>.glb f
   npm run buildings -- --name london              measure, build and export
   npm run buildings -- --name london --measure    print measurements only
   npm run buildings -- --name london --export     re-export buildings/london.blend (keeps hand edits)
+  npm run buildings -- --name oxford --init "Oxford Street"   start buildings/oxford.json for another street
+
+The whole process for a new street is in docs/street-buildings.md.
 
 Blender is found from $BLENDER, /Applications/Blender.app or PATH.
 """
@@ -320,6 +323,68 @@ def block(poly,kind,fit,fr,floor,overhang,parapet,dsm=None):
 PITCHED=('hip','gable')
 
 
+def noted(exclude=None):
+    """OSM ids modelled (or replaced) by the street specs in buildings/, i.e. every spec without an `auto` area."""
+    out=set()
+    for path in SPECS.glob('*.json'):
+        spec=json.loads(path.read_text())
+        if path.stem==exclude or spec.get('auto'):continue
+        out|={b['id'] for b in spec['buildings']}|{r for b in spec['buildings'] for r in b.get('replaces',[])}
+    return out
+
+
+def photo_point(f,lines,building):
+    """Where to photograph a facade from: the opposite side of the street, 3 m past the centreline, facing it."""
+    mid=(np.array(f['a'])+np.array(f['b']))/2;line=min(lines,key=lambda l:l.distance(Point(*mid)))
+    q=line.interpolate(line.project(Point(*mid)));to=np.array([q.x,q.y])-mid;d=np.linalg.norm(to)
+    v=np.array([q.x,q.y])+(to/d*3 if d>1e-6 else np.array(f['n'])*3)
+    heading=math.degrees(math.atan2(mid[0]-v[0],mid[1]-v[1]))%360;lon,lat=P.INVERSE.transform(v[0]+P.CX,v[1]+P.CY)
+    return dict(lat=round(lat,6),lon=round(lon,6),heading=round(heading)%360,mapillary=f'https://www.mapillary.com/app/?lat={lat:.6f}&lng={lon:.6f}&z=19')
+
+
+def scaffold(name,street):
+    """Start buildings/<name>.json for a street: every building with an edge facing it within 12 m that no other
+    street spec has, measured, with a typical facade for its type (so it builds at once) to be replaced by notes
+    from photos, and where to photograph each one from. Entries run along the street."""
+    import building_typology as T
+    path=SPECS/f'{name}.json'
+    if path.exists():sys.exit(f'{path.relative_to(P.ROOT)} exists: edit it, or remove it to start again')
+    features=json.loads((P.OUT/'features.json').read_text());lines=street_lines(features,street)
+    if not lines:sys.exit(f'No road named {street!r} in OSM')
+    osm=json.loads((P.CACHE/'osm.json').read_text());tags={f"{e['type']}/{e['id']}":e.get('tags',{}) for e in osm['elements'] if 'tags' in e}
+    taken=noted();candidates=[b for b in features['buildings'] if b['id'] not in taken and min(l.distance(Polygon(b['ring'])) for l in lines)<12]
+    if not candidates:sys.exit(f'No unmodelled buildings front {street}')
+    xs=[p[0] for b in candidates for p in b['ring']];ys=[p[1] for b in candidates for p in b['ring']]
+    dem,dsm=lidar(name,(min(xs)-MARGIN,min(ys)-MARGIN,max(xs)+MARGIN,max(ys)+MARGIN))
+    from shapely.ops import linemerge
+    axis=linemerge(lines);axis=axis if axis.geom_type=='LineString' else max(axis.geoms,key=lambda g:g.length)
+    out=[]
+    for b in candidates:
+        poly=Polygon(b['ring']).buffer(0);f=frontage(b['ring'],lines)
+        if f is None:continue
+        kind,reason=T.classify(tags.get(b['id'],{}),poly,poly.centroid,False)
+        if kind is None:continue
+        try:m=measure_one({'id':b['id'],'prior':'pitched' if kind=='house' else None,'open':kind=='canopy'},b,f,dem,dsm)
+        except Exception as error:P.log(' ',b['id'],'not measured:',type(error).__name__);continue
+        spec=T.spec(b['id'],kind,reason,m,tags.get(b['id'],{}));spec.pop('auto',None)
+        spec.update(street=street,evidence=f'Not yet observed: a typical facade for a {kind} ({reason}). Replace with notes from photos.',
+                    photo=photo_point(f,lines,b))
+        out.append((axis.project(poly.centroid),spec))
+    specs=[sp for _,sp in sorted(out,key=lambda o:o[0])]
+    path.write_text(json.dumps(dict(title=street,notes='Started by npm run buildings -- --init. Each entry has measured facts and a typical facade for its type; replace those values with what photos of the building show and record the photos in `evidence`. See docs/street-buildings.md.',
+                                    buildings=specs),indent=2,ensure_ascii=False)+'\n')
+    from collections import Counter
+    P.log(f'Wrote {path.relative_to(P.ROOT)}: {len(specs)} buildings fronting {street} (',', '.join(f'{n} {k}' for k,n in Counter(sp['type'] for sp in specs).most_common()),')')
+    autos=[q.stem for q in SPECS.glob('*.json') if json.loads(q.read_text()).get('auto')]
+    if autos:P.log(f"  Rebuild {', '.join(autos)} too, so the typed area leaves these buildings to {name}: npm run buildings -- --name {autos[0]}")
+
+
+def write_index():
+    """public/buildings/index.json: the building sets the viewer loads."""
+    names=sorted(p.stem for p in PUBLIC.glob('*.glb'))
+    (PUBLIC/'index.json').write_text(json.dumps(names)+'\n')
+
+
 def measure(name):
     """Measure the spec's buildings; an `auto` area adds every other building in its bounds, typed by rule."""
     spec=json.loads((SPECS/f'{name}.json').read_text())
@@ -332,8 +397,8 @@ def measure(name):
         import building_typology as T
         osm=json.loads((P.CACHE/'osm.json').read_text());tags={f"{e['type']}/{e['id']}":e.get('tags',{}) for e in osm['elements'] if 'tags' in e}
         taken={b['id'] for b in spec['buildings']}|{r for b in spec['buildings'] for r in b.get('replaces',[])}
-        for other in auto.get('exclude',[]):
-            o=json.loads((SPECS/f'{other}.json').read_text())['buildings'];taken|={b['id'] for b in o}|{r for b in o for r in b.get('replaces',[])}
+        # Buildings with observed notes in any street spec are modelled there, not typed here.
+        taken|=noted(exclude=name)
         W,S,E,N=auto['bounds']
         for b in features['buildings']:
             c=Polygon(b['ring']).centroid
@@ -481,7 +546,9 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('--name',default='london');ap.add_argument('--measure',action='store_true',help='print measurements only')
     ap.add_argument('--export',action='store_true',help='export buildings/<name>.blend without rebuilding (keeps hand edits)')
+    ap.add_argument('--init',metavar='STREET',help='start buildings/<name>.json from the buildings fronting this OSM street')
     args=ap.parse_args()
+    if args.init:scaffold(args.name,args.init);return
     source=SPECS/f'{args.name}.blend';glb=PUBLIC/f'{args.name}.glb';PUBLIC.mkdir(parents=True,exist_ok=True)
     job={'mode':'export','blend':str(source),'glb':str(glb),'light':bool(json.loads((SPECS/f'{args.name}.json').read_text()).get('auto'))}
     if not args.export:
@@ -503,7 +570,7 @@ def main():
         if line.startswith('BUILDINGS'):P.log(' ',line[10:])
     if r.returncode or not glb.exists():
         sys.stderr.write(r.stdout[-4000:]+r.stderr[-4000:]);sys.exit('Blender failed')
-    P.log('  wrote',glb.relative_to(P.ROOT),f'{glb.stat().st_size/1e6:.1f} MB')
+    P.log('  wrote',glb.relative_to(P.ROOT),f'{glb.stat().st_size/1e6:.1f} MB');write_index()
 
 
 # --- Material textures --------------------------------------------------------------
