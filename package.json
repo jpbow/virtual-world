@@ -16,6 +16,7 @@
     "plant:install": ".venv/bin/python tools/install_plant.py",
     "buildings": ".venv/bin/python tools/street_buildings.py",
     "furniture": ".venv/bin/python tools/street_furniture.py",
+    "street": ".venv/bin/python tools/street_corridor.py",
     "assets:fetch": ".venv/bin/python tools/fetch_surface_assets.py"
   },
   "dependencies": {

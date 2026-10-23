@@ -22,3 +22,6 @@ public/buildings/
 
 # Generated street furniture kit and placements (tools/street_furniture.py)
 public/street-kit/
+
+# Generated street corridors (tools/street_corridor.py)
+public/streets/

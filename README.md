@@ -174,6 +174,17 @@ Typed buildings face the nearest road or path (else their longest edge). To give
 
 The area builds as merged meshes on a 400 m grid (`public/buildings/lyttelton.glb`, about 40 MB): each chunk shares one material per surface (weatherboard, corrugated iron, render, glass…) and carries every building's colours as vertex colours, about a dozen materials and 250 draw calls for the whole town. A per-vertex `_BUILDING` attribute keeps buildings selectable. Typed windows are lighter than London Street's (glass, sill and rail, no architraves). The few buildings the measurement cannot handle (degenerate footprints) keep their generic extrusion.
 
+### London Street kerbs and footpaths
+
+`npm run street -- --name london` replaces the flat OSM road ribbon on London Street, between its two junctions, with a street corridor built in Blender: traffic lanes, parking lanes, a 0.3 m concrete gutter, a 150 mm kerb (lowered to a 20 mm ramp at the zebra crossings), the kerb top and paver footpaths up to the building line. Surfaces are cropped from the city kit's atlas (asphalt, concrete, pavers; the pavers greyed to match the London Street photos on Wikimedia Commons).
+
+The kerb lines are measured, not assumed:
+- **Parking runs** from the street inventory: cars stand against the kerb, so the kerb is a run's car-centre offset plus half the car's depth across the street at its parking angle, plus a 0.2–0.35 m gap. On London Street that puts the south kerb about 8.4 m from the centreline (angle parking) and the north kerb about 5.5 m (parallel parking); the 1 m LiDAR's gutter and slope break agree. The aerial's own asphalt edge does not: verandahs hide the north footpath and the south side's grey pavers read as asphalt.
+- **Zebra crossings** run kerb to kerb, so their bars set the kerbs at the crossings, which sit on build-outs; between spans of evidence the kerb is interpolated.
+- **Footpaths** reach the LiDAR-registered facade lines of the modelled buildings, else OSM footprints, else 3 m.
+
+The corridor is laid out every 0.95 m in local metres with z the height above the ground (`streets/london.blend`, `public/streets/london.glb`). The viewer drapes it 6 cm above the terrain, over the road ribbon it covers and under the inventory's measured paint (bay lines, zebras, limit lines), which stays on top. It stops short of the cross streets, whose corners are not yet built. It is part of the *Roads & paths* layer.
+
 ### Street furniture kit
 
 `npm run furniture -- --name london` places a reusable street-furniture kit wherever records show an item. The kit is built in Blender by `tools/blender_street_kit.py` (`street-kit/street-kit.blend`, exported to `public/street-kit/street-kit.glb`): ornamental and park lamps, a London Street pedestal litter bin with its compass emblem, a Big Belly compactor, benches with and without backs, a picnic table, bollard, bike hoops, drinking fountain, NZ Post and DX Mail boxes, a payphone, a bus stop, and stop, give way, parking (P5–P120 and a plain P) and no-stopping signs. Styles follow London Street photos; sizes are typical. Each prefab stands on its origin facing +Z in the GLB, so the same model is reused at every placement (one instanced mesh per part).
