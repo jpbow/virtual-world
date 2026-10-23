@@ -8,7 +8,7 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
  * The whole corridor draws a little nearer than the OSM road ribbons it covers and a little farther than the
  * inventory's measured paint, which stays visible on top.
  */
-export interface StreetCorridor {group:THREE.Group;street:string}
+export interface StreetCorridor {group:THREE.Group;street:string;surfaceAt:(x:number,z:number)=>number|null}
 
 // Above the displayed terrain (whose triangles can sit a few centimetres above the sampled height) and under
 // the inventory's paint, which is lifted 0.14 m.
@@ -41,5 +41,9 @@ export async function loadStreetCorridor(name:string,heightAt:(x:number,z:number
     });
     const mesh=new THREE.Mesh(geometry,materials.length===1?materials[0]:materials);mesh.name=o.name;group.add(mesh);
   });
-  return {group,street};
+  // The corridor's top surface (footpath, kerb or road) under a point, so props stand on the footpath.
+  group.updateMatrixWorld(true);
+  const ray=new THREE.Raycaster(),down=new THREE.Vector3(0,-1,0),from=new THREE.Vector3();
+  const surfaceAt=(x:number,z:number)=>{from.set(x,1e4,z);ray.set(from,down);const hit=ray.intersectObject(group,true)[0];return hit?hit.point.y:null;};
+  return {group,street,surfaceAt};
 }

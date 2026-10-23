@@ -81,16 +81,45 @@ def side(mesh,key,sign):
         fa,fb=ha+.02*(ea-ka),hb+.02*(eb-kb)
         mesh.quad(flip([at(i,ka+.15,ha),at(j,kb+.15,hb),at(j,eb,fb),at(i,ea,fa)]),MATS['footpath'])
         mesh.quad(flip([at(i,ea,fa),at(j,eb,fb),at(j,eb,-.3),at(i,ea,-.3)]),MATS['kerb'],True,s)
-    # End faces of the kerb and footpath where the corridor stops at the cross streets.
+    # End faces of the kerb and footpath where the corridor stops without a corner.
+    ends={k['end'] for k in C.get('corners',[])}
     for i,d in ((0,-1),(len(st)-1,1)):
+        if ('west' if i==0 else 'east') in ends:continue
         k=sd['kerb'][i];e=sd['edge'][i];h=LOW if sd['low'][i] else H;f=h+.02*(e-k)
         pts=[at(i,k,0),at(i,e,-.3),at(i,e,f),at(i,k+.15,h),at(i,k,h)]
         mesh.quad(pts if (d>0)==(sign>0) else pts[::-1],MATS['kerb'],True,(0,)*5)
 
 
+def corner(mesh,k):
+    """A junction corner: footpath and gutter triangles, kerb faces and tops along the kerb lines (footpath on
+    their left), and skirts into the ground along the footpath's other edges."""
+    H=C['kerbHeight'];FH=H+.03
+    def up(tri,z,mat):
+        (ax,ay),(bx,by),(cx,cy)=tri;pts=[(ax,ay,z),(bx,by,z),(cx,cy,z)]
+        if (bx-ax)*(cy-ay)-(by-ay)*(cx-ax)<0:pts=pts[::-1]
+        mesh.quad(pts,mat)
+    for t in k['footpath']:up(t,FH,MATS['footpath'])
+    for t in k['gutter']:up(t,0.,MATS['gutter'])
+    for line in k['kerbs']:
+        s=0.
+        for a,b in zip(line,line[1:]):
+            a,b=Vector((*a,0)),Vector((*b,0));d=(b-a);L=d.length
+            if L<1e-4:continue
+            left=Vector((-d.y,d.x,0))/L*.15
+            mesh.quad([(a.x,a.y,0),(b.x,b.y,0),(b.x,b.y,FH),(a.x,a.y,FH)],MATS['kerb'],True,(s,s+L,s+L,s))
+            mesh.quad([(a.x,a.y,FH+.004),(b.x,b.y,FH+.004),(b.x+left.x,b.y+left.y,FH+.004),(a.x+left.x,a.y+left.y,FH+.004)],MATS['kerb'])
+            s+=L
+    for line in k['skirts']:
+        s=0.
+        for a,b in zip(line,line[1:]):
+            L=((b[0]-a[0])**2+(b[1]-a[1])**2)**.5
+            mesh.quad([(a[0],a[1],FH),(b[0],b[1],FH),(b[0],b[1],-.3),(a[0],a[1],-.3)],MATS['kerb'],True,(s,s+L,s+L,s));s+=L
+
+
 for o in list(bpy.data.objects):bpy.data.objects.remove(o)
 mesh=Mesh()
 for key,sign in (('left',1),('right',-1)):side(mesh,key,sign)
+for k in C.get('corners',[]):corner(mesh,k);log(f"{k['end']} corners: {', '.join(k['streets'])}")
 ob=mesh.build(f"street {C['street']}");ob['street']=C['street']
 log(f"{ob.name}: {len(C['stations'])} stations, {len(ob.data.polygons)} faces")
 bpy.ops.file.pack_all();bpy.ops.wm.save_as_mainfile(filepath=job['blend'])

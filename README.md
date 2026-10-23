@@ -183,7 +183,7 @@ The kerb lines are measured, not assumed:
 - **Zebra crossings** run kerb to kerb, so their bars set the kerbs at the crossings, which sit on build-outs; between spans of evidence the kerb is interpolated.
 - **Footpaths** reach the LiDAR-registered facade lines of the modelled buildings, else OSM footprints, else 3 m.
 
-The corridor is laid out every 0.95 m in local metres with z the height above the ground (`streets/london.blend`, `public/streets/london.glb`). The viewer drapes it 6 cm above the terrain, over the road ribbon it covers and under the inventory's measured paint (bay lines, zebras, limit lines), which stays on top. It stops short of the cross streets, whose corners are not yet built. It is part of the *Roads & paths* layer.
+The corridor is laid out every 0.95 m in local metres with z the height above the ground (`streets/london.blend`, `public/streets/london.glb`). The viewer drapes it 6 cm above the terrain, over the road ribbon it covers and under the inventory's measured paint (bay lines, zebras, limit lines), which stays on top. At both junctions (Canterbury Street, and Oxford Street with Sumner Road) the kerbs turn the corner: London Street's carriageway at its end kerbs and each cross-street arm at kerbs set by its own zebra crossing (Oxford Street 6.5 and 4.9 m either side of the centreline, Canterbury Street 4.3 and 4.4 m) are merged, their inside corners rounded to a 5 m kerb radius, and a 3 m footpath wraps around them into the cross street, clear of buildings. Only the corners on London Street's side are built. Street furniture stands on the corridor's surface (footpath or kerb) where there is one. It is part of the *Roads & paths* layer.
 
 ### Street furniture kit
 

@@ -30,4 +30,20 @@ class ParkingGeometryTests(unittest.TestCase):
         self.assertAlmostEqual(5.8+depth(68.5)/2+C.GAP['angle'],8.42,places=2)
 
 
+class CornerTests(unittest.TestCase):
+    def test_offset_polygon_spans_left_and_right_kerbs(self):
+        from shapely.geometry import LineString
+        poly=C.offset_polygon(LineString([(0,0),(20,0)]),4.,6.,0,20)
+        x0,y0,x1,y1=poly.bounds
+        self.assertAlmostEqual(y1,4.,places=6);self.assertAlmostEqual(y0,-6.,places=6);self.assertAlmostEqual(poly.area,200.,places=3)
+
+    def test_arm_kerbs_from_a_zebra_on_that_street_only(self):
+        from shapely.geometry import LineString,box
+        arm=LineString([(0,0),(0,30)]);zebra=box(-4.5,9,5.5,12)       # bars from x -4.5 to 5.5 across the arm
+        self.assertEqual(C.arm_kerbs(arm,[('Other Street',zebra)],'Cross Street',10)[2],'OSM width')
+        left,right,how=C.arm_kerbs(arm,[('Cross Street',zebra)],'Cross Street',10)
+        # Heading north, left is west.
+        self.assertEqual(how,'zebra crossing');self.assertAlmostEqual(left,4.5);self.assertAlmostEqual(right,5.5)
+
+
 if __name__=='__main__':unittest.main()

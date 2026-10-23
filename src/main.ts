@@ -202,7 +202,8 @@ async function start(){try{manifest=await get<Manifest>('manifest.json');debug.m
         note.append(link);el('sources').append(note);
       }
       // Street furniture kit placed from OSM and council asset records (npm run furniture).
-      streetKit=await loadStreetKit('london',heightAt);
+      // Furniture stands on the corridor's footpaths where there is one, else on the terrain.
+      streetKit=await loadStreetKit('london',(x,z)=>streetCorridor?.surfaceAt(x,z)??heightAt(x,z));
       if(streetKit){
         scene.add(streetKit.group);
         const note=document.createElement('p');note.id='street-kit-info';note.textContent=`Street furniture: ${streetKit.placed} items (${Object.entries(streetKit.models).map(([m,n])=>`${n} ${m}`).join(', ')}) from a reusable Blender kit, placed from ${Object.values(streetKit.sources).join('; ')}. Kit styles follow London Street photos; sizes are typical.`;el('sources').append(note);
