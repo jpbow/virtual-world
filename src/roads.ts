@@ -2,7 +2,9 @@ import * as THREE from 'three';
 import type {Road} from './types';
 
 /** Road, footpath and track ribbons draped on the displayed terrain.
- * Surfaces use CC0 Poly Haven scans at their recorded physical scale. Lane
+ * Sealed roads use the city kit's asphalt (Pieter Ferreira, CC BY 4.0); footpaths and tracks use CC0 Poly
+ * Haven scans at their recorded physical scale. A road with measured kerbs (halfWidths, per point) follows
+ * them on each side instead of a constant width. Lane
  * markings are generated from OSM class and width: they are conventions, not
  * surveyed paint.
  */
@@ -20,7 +22,8 @@ const EDGE_LINES=new Set(['trunk','primary','secondary','trunk_link','primary_li
 // tints rescale each scan's mean colour to the median aerial colour sampled
 // along mapped centrelines (about 112,116,112 sRGB for sealed roads).
 const SURFACES:Record<RoadSurface,{slug:string;tile:number;tint:[number,number,number];roughness:number}>={
-  road:{slug:'tarred_gravel',tile:2.2,tint:[3.45,4.29,4.94],roughness:.92},
+  // The city kit's asphalt, cropped square from its atlas (about 4.66 m of road), with its normal map.
+  road:{slug:'city_kit_asphalt',tile:4.66,tint:[1.28,1.4,1.15],roughness:.92},
   footpath:{slug:'asphalt_floor',tile:2.35,tint:[.72,.97,1.2],roughness:.9},
   track:{slug:'gravel_road',tile:2,tint:[1.13,1.69,2.15],roughness:1},
 };
@@ -76,8 +79,8 @@ export function roadGeometry(roads:Road[],surface:RoadSurface,heightAt:(x:number
   for(const road of selected){
     // Painted crossings are drawn as a 3 m band over the carriageway.
     const width=road.crossing?3:road.width,half=width/2,rank=priority(road);
-    // Draped ribbons follow the terrain every 2.5 m; bridges keep their deck.
-    const p=road.bridge?road.points:densify(road.points,2.5);
+    // Draped ribbons follow the terrain every 2.5 m; bridges, and roads with measured kerbs, keep their points.
+    const p=road.bridge||road.halfWidths?road.points:densify(road.points,2.5);
     const marking=road.crossing?(road.crossing==='zebra'?3:4):surface!=='road'||width<5.5?0:EDGE_LINES.has(road.kind)?2:CENTRE_LINE.has(road.kind)?1:0;
     const [startCut,endCut]=cuts.get(road)??[0,0];
     let length=0;for(let i=1;i<p.length;i++)length+=Math.hypot(p[i][0]-p[i-1][0],p[i][1]-p[i-1][1]);
@@ -92,14 +95,15 @@ export function roadGeometry(roads:Road[],surface:RoadSurface,heightAt:(x:number
         const sx=p[i+1][0]-p[i][0],sy=p[i+1][1]-p[i][1],sl=Math.hypot(sx,sy)||1;
         miter=1/Math.max(.55,(tx*sx+ty*sy)/sl);
       }
-      const nx=-ty*half*miter,ny=tx*half*miter;
       for(const side of [-1,0,1]){
+        // Measured kerbs: [left, right] half widths at this point (left of the direction of travel is +1).
+        const h=road.halfWidths?road.halfWidths[i][side>0?0:1]:half,nx=-ty*h*miter,ny=tx*h*miter;
         const x=p[i][0]+nx*side,north=p[i][1]+ny*side;
         // Drape onto the displayed terrain triangles; bridges keep their deck.
         const y=road.bridge?p[i][2]:heightAt(x,-north)+.12;
         position.push(x,y,-north);
-        uv.push(side*half*miter/tile,distance/tile);
-        mark.push(side*half,distance,width,length);
+        uv.push(side*h*miter/tile,distance/tile);
+        mark.push(side*h,distance,width,length);
         info.push(marking,rank,startCut,endCut);
       }
       if(i>0){

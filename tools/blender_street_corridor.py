@@ -1,7 +1,7 @@
 """Blender side of tools/street_corridor.py (run inside Blender, not the venv).
 
-Lays the measured cross-sections out as strips between stations, per side of the street: the carriageway
-(one asphalt, parking lanes included), a 0.3 m concrete gutter, a 150 mm kerb (lowered to 20 mm at crossings, a kerb ramp), the kerb
+Lays the measured cross-sections out as strips between stations, per side of the street (the carriageway is
+the OSM road ribbon, widened to these kerbs in the viewer): a 0.3 m concrete gutter, a 150 mm kerb (lowered to 20 mm at crossings, a kerb ramp), the kerb
 top and the footpath up to the building line, which ends in a short skirt into the ground. Coordinates are
 local metres with z the height above the ground; the viewer drapes the mesh onto the terrain. Surfaces use
 textures cropped from the city kit atlas, tinted per surface. Saves streets/<name>.blend and the GLB.
@@ -29,7 +29,7 @@ def material(name,texture,tint,rough):
     m.diffuse_color=linear(tint);m['tile']=TILES[texture];return m
 
 
-MATS={'lane':material('road asphalt','asphalt','#ffffff',.9),
+MATS={
       'gutter':material('road gutter','concrete','#b4b2ab',.85),'kerb':material('kerb concrete','concrete','#dcdad3',.8),
       'footpath':material('footpath pavers','pavers','#b8b8b4',.85)}
 
@@ -59,10 +59,9 @@ def side(mesh,key,sign):
     for i in range(len(st)-1):
         j=i+1;ka,kb=sd['kerb'][i],sd['kerb'][j];ga,gb=ka-.3,kb-.3;ea,eb=sd['edge'][i],sd['edge'][j]
         ha=LOW if sd['low'][i] else H;hb=LOW if sd['low'][j] else H
-        # One asphalt from the centreline to the gutter, parking lanes included; the inventory paints the bays.
+        # The carriageway is the OSM road ribbon, widened to these kerbs in the viewer; this adds the gutter.
         q=lambda a0,b0,a1,b1,z0,z1:[at(i,a0,z0),at(j,b0,z1),at(j,b1,z1),at(i,a1,z0)]
         flip=lambda pts:pts if sign>0 else pts[::-1]
-        mesh.quad(flip(q(0,0,ga,gb,0,0)),MATS['lane'])
         mesh.quad(flip(q(ga,gb,ka,kb,0,0)),MATS['gutter'])
         s=(st[i]['s'],st[j]['s'],st[j]['s'],st[i]['s'])
         # Kerb face, kerb top, footpath (2% fall to the kerb), and a skirt into the ground at the building line.

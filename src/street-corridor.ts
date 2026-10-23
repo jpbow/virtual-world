@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import type {Road} from './types';
 
 /** Street corridors (tools/street_corridor.py): traffic and parking lanes, gutters, kerbs and footpaths built in
  * Blender from measured kerb lines, with the city kit's surfaces.
@@ -10,9 +11,9 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
  */
 export interface StreetCorridor {group:THREE.Group;street:string;surfaceAt:(x:number,z:number)=>number|null}
 
-// Above the displayed terrain (whose triangles can sit a few centimetres above the sampled height) and under
-// the inventory's paint, which is lifted 0.14 m.
-const LIFT=0.06;
+// Above the OSM road ribbons it covers (draped 0.12 m above the terrain, roads.ts) and under the inventory's
+// paint (0.14 m), so the ribbon cannot show through up close where the depth bias is only millimetres.
+const LIFT=0.13;
 
 export async function loadStreetCorridor(name:string,heightAt:(x:number,z:number)=>number):Promise<StreetCorridor|null>{
   let scene:THREE.Group;
@@ -48,12 +49,52 @@ export async function loadStreetCorridor(name:string,heightAt:(x:number,z:number
   return {group,street,surfaceAt};
 }
 
-/** Vegetation without the plants that the canopy detection put on the street's carriageway (kerb to kerb and its
- * junctions, from public/streets/<name>.json): there it is parked cars, umbrellas or awnings, not planting. */
-export async function clearedVegetation(name:string,trees:number[][]):Promise<number[][]>{
-  let road:number[][][];
-  try{const response=await fetch(`/streets/${name}.json`);if(!response.ok||!(response.headers.get('content-type')??'').includes('json'))return trees;road=(await response.json()).road;}catch{return trees;}
-  const boxes=road.map(r=>[Math.min(...r.map(p=>p[0])),Math.min(...r.map(p=>p[1])),Math.max(...r.map(p=>p[0])),Math.max(...r.map(p=>p[1]))]);
-  const inside=(x:number,y:number,ring:number[][])=>{let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const [xi,yi]=ring[i],[xj,yj]=ring[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;};
-  return trees.filter(([x,y])=>!road.some((ring,k)=>x>=boxes[k][0]&&x<=boxes[k][2]&&y>=boxes[k][1]&&y<=boxes[k][3]&&inside(x,y,ring)));
+/** Outlines written beside the corridor (public/streets/<name>.json): `road` is the carriageway kerb to kerb with
+ * its junctions, `surface` the corridor's stretch kerb to kerb, and `ribbon` the street's OSM road ribbon over
+ * that stretch, widened per point to the measured kerbs. */
+export interface StreetOutline {road:number[][][];surface:number[][][];ribbon:Road|null}
+
+export async function streetOutline(name:string):Promise<StreetOutline|null>{
+  try{
+    const response=await fetch(`/streets/${name}.json`);
+    if(!response.ok||!(response.headers.get('content-type')??'').includes('json'))return null;
+    const data=await response.json();return {road:data.road??[],surface:data.surface??[],ribbon:data.ribbon??null};
+  }catch{return null;}
+}
+
+function within(rings:number[][][]){
+  const boxes=rings.map(r=>[Math.min(...r.map(p=>p[0])),Math.min(...r.map(p=>p[1])),Math.max(...r.map(p=>p[0])),Math.max(...r.map(p=>p[1]))]);
+  const inRing=(x:number,y:number,ring:number[][])=>{let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const [xi,yi]=ring[i],[xj,yj]=ring[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;};
+  return (x:number,y:number)=>rings.some((ring,k)=>x>=boxes[k][0]&&x<=boxes[k][2]&&y>=boxes[k][1]&&y<=boxes[k][3]&&inRing(x,y,ring));
+}
+
+/** Vegetation without the plants that the canopy detection put on the carriageway: there it is parked cars,
+ * umbrellas or awnings, not planting. Footpath planting stays. */
+export function treesOutside(trees:number[][],outline:StreetOutline){
+  const inside=within(outline.road);return trees.filter(([x,y])=>!inside(x,y));
+}
+
+/** Road ribbons with the corridor's stretch cut out and the street's widened ribbon in its place. Each cut
+ * reaches 5 cm under the widened ribbon, so no gap shows. */
+export function roadsWithStreet(roads:Road[],outline:StreetOutline):Road[]{
+  return outline.ribbon?[...roadsOutside(roads,outline),outline.ribbon]:roads;
+}
+
+function roadsOutside<R extends {points:number[][]}>(roads:R[],outline:StreetOutline):R[]{
+  const inside=within(outline.surface),out:R[]=[];
+  const lerp=(a:number[],b:number[],t:number)=>a.map((v,i)=>v+(b[i]-v)*t);
+  // Where segment a-b (a outside, b inside) crosses into the surface, then 0.5 m further in.
+  const entry=(a:number[],b:number[])=>{let lo=0,hi=1;for(let k=0;k<14;k++){const m=(lo+hi)/2;if(inside(...lerp(a,b,m).slice(0,2) as [number,number]))hi=m;else lo=m;}
+    const len=Math.hypot(b[0]-a[0],b[1]-a[1]);return lerp(a,b,Math.min(1,hi+.05/Math.max(len,1e-6)));};
+  for(const road of roads){
+    const flags=road.points.map(p=>inside(p[0],p[1]));
+    if(!flags.some(Boolean)){out.push(road);continue;}
+    let run:number[][]=[];
+    road.points.forEach((p,i)=>{
+      if(!flags[i]){if(!run.length&&i>0)run.push(entry(p,road.points[i-1]));run.push(p);return;}
+      if(run.length){run.push(entry(road.points[i-1],p));if(run.length>1)out.push({...road,points:run});run=[];}
+    });
+    if(run.length>1)out.push({...road,points:run});
+  }
+  return out;
 }

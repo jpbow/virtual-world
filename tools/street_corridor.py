@@ -9,11 +9,12 @@ The OSM road ribbon has no kerbs or footpaths. For a street with a street invent
   (parallel, angle or perpendicular) plus a 0.2-0.35 m gap. A zebra crossing runs kerb to kerb, so its
   bars set the kerbs at the crossing (London Street's crossings sit on build-outs). Between evidence the
   kerb is interpolated, which tapers the kerb into and out of crossing build-outs.
+- **The road itself** stays the OSM ribbon, widened per station to the measured kerbs (`ribbon` in
+  public/streets/<name>.json), so this builds only what the ribbon lacks.
 - **Footpaths** from the kerb back to the building line: the LiDAR-registered facades of modelled
   buildings (tools/street_buildings.py), else OSM footprints, else a 3 m footpath.
 
-Blender (tools/blender_street_corridor.py) builds the carriageway, parking lanes, gutters, kerbs (lowered at
-crossings) and footpaths as one mesh in local metres, height above the ground in z, textured with surfaces
+Blender (tools/blender_street_corridor.py) builds the gutters, kerbs (lowered at crossings) and footpaths as one mesh in local metres, height above the ground in z, textured with surfaces
 cropped from the "modular kit city builder starter kit" atlas (Pieter Ferreira, CC BY 4.0): asphalt,
 concrete and pavers. The viewer drapes it onto the terrain, under the inventory's measured paint.
 
@@ -138,8 +139,8 @@ def measure(name):
         edge=np.maximum(edge,kerb+1.5)
         low=[source[i]=='zebra crossing' for i in range(len(stations))]
         sides[side]=dict(kerb=kerb.round(2).tolist(),edge=edge.round(2).tolist(),low=low,source=source,runs=runs[side])
-    corner,road=corners(name,features,line,stations,{'left':sides[1],'right':sides[-1]})
-    return dict(name=name,street=STREETS[name],corners=corner,road=road,stations=[dict(s=st['s'],x=round(st['x'],3),y=round(st['y'],3),n=[round(float(v),5) for v in st['n']]) for st in stations],
+    corner,road,surface=corners(name,features,line,stations,{'left':sides[1],'right':sides[-1]})
+    return dict(name=name,street=STREETS[name],corners=corner,road=road,surface=surface,stations=[dict(s=st['s'],x=round(st['x'],3),y=round(st['y'],3),n=[round(float(v),5) for v in st['n']]) for st in stations],
                 sides={'left':sides[1],'right':sides[-1]},kerbHeight=KERB,kerbLow=KERB_LOW)
 
 
@@ -232,8 +233,8 @@ def corners(name,features,line,stations,sides):
         out.append(dict(end='west' if end==0 else 'east',junction=[round(J.x,2),round(J.y,2)],streets=names,
                         footpath=[t for q in polys(foot) for t in tris(q)],gutter=[t for q in polys(gutter) for t in tris(q)],
                         kerbs=kerbs,skirts=lines(skirt),area=round(foot.area,1)))
-    road=unary_union(road)
-    return out,[[[round(x,2),round(y,2)] for x,y in q.exterior.coords] for q in getattr(road,'geoms',[road]) if q.geom_type=='Polygon']
+    rings=lambda g:[[[round(x,2),round(y,2)] for x,y in q.exterior.coords] for q in getattr(g,'geoms',[g]) if q.geom_type=='Polygon']
+    return out,rings(unary_union(road)),rings(lanes)
 
 
 def textures():
@@ -248,6 +249,17 @@ def textures():
         if name=='pavers':crop=crop.convert('L').convert('RGB')
         crop.save(path,quality=92)
     return out
+
+
+def ribbon(c):
+    """The street's OSM road ribbon over the corridor, widened to the measured kerbs: per-station [left, right]
+    half widths reaching 5 cm under the gutters. The viewer swaps it in for the plain ribbon there."""
+    features=json.loads((P.OUT/'features.json').read_text())
+    mid=c['stations'][len(c['stations'])//2];here=Point(mid['x'],mid['y'])        # the OSM way under the corridor
+    osm=min((r for r in features['roads'] if r.get('name')==c['street'] and len(r['points'])>1),key=lambda r:LineString([(p[0],p[1]) for p in r['points']]).distance(here))
+    L,R=c['sides']['left']['kerb'],c['sides']['right']['kerb']
+    return dict(id=osm['id'],name=c['street'],kind=osm['kind'],surface=osm.get('surface'),bridge=False,width=round(float(np.median(L)+np.median(R)),2),
+                points=[[st['x'],st['y'],0] for st in c['stations']],halfWidths=[[round(l-.25,2),round(r-.25,2)] for l,r in zip(L,R)])
 
 
 def report(c):
@@ -268,8 +280,9 @@ def main():
     PUBLIC.mkdir(parents=True,exist_ok=True);glb=PUBLIC/f'{args.name}.glb';blend=P.ROOT/f'streets/{args.name}.blend';blend.parent.mkdir(exist_ok=True)
     job=dict(corridor=c,textures=str(textures()),tiles={k:v[1] for k,v in ATLAS.items()},glb=str(glb),blend=str(blend))
     path=P.CACHE/f'street-{args.name}-job.json';path.write_text(json.dumps(job))
-    # The carriageway outline (kerb to kerb, and the junctions), so the viewer can keep vegetation off the road.
-    (PUBLIC/f'{args.name}.json').write_text(json.dumps(dict(street=c['street'],road=c['road'])))
+    # Outlines for the viewer: the carriageway (kerb to kerb, and the junctions) keeps vegetation off the road;
+    # the corridor's own asphalt (kerb to kerb) replaces the OSM road ribbons there.
+    (PUBLIC/f'{args.name}.json').write_text(json.dumps(dict(street=c['street'],road=c['road'],surface=c['surface'],ribbon=ribbon(c))))
     r=subprocess.run([blender(),'-b','--factory-startup','--python',str(Path(__file__).with_name('blender_street_corridor.py')),'--',str(path)],capture_output=True,text=True)
     for l in r.stdout.splitlines():
         if l.startswith('STREET'):P.log(' ',l[7:])
