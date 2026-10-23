@@ -1,0 +1,1170 @@
+{
+  "title": "Oxford Street",
+  "notes": "Started by npm run buildings -- --init. Each entry has measured facts and a typical facade for its type; replace those values with what photos of the building show and record the photos in `evidence`. See docs/street-buildings.md.",
+  "buildings": [
+    {
+      "id": "way/1318070226",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#b9cdb0"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 1,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#c8262c"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599063,
+        "lon": 172.724598,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599063&lng=172.724598&z=19"
+      }
+    },
+    {
+      "id": "way/1318070232",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d8a49a"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "pair",
+        "door": 0.72,
+        "doorColour": "#2f4a35"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599251,
+        "lon": 172.724502,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599251&lng=172.724502&z=19"
+      }
+    },
+    {
+      "id": "way/1546582446",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e6d38a"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "single",
+        "door": 0.72,
+        "doorColour": "#3a3f44"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599377,
+        "lon": 172.724438,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599377&lng=172.724438&z=19"
+      }
+    },
+    {
+      "id": "way/1318070244",
+      "type": "outbuilding",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#e9e6de"
+      },
+      "trim": "#e9e9e6",
+      "eaves": 0,
+      "garages": [
+        {
+          "at": 0.5,
+          "width": 2.6,
+          "height": 2.1,
+          "colour": "#e9e6de"
+        }
+      ],
+      "evidence": "Not yet observed: a typical facade for a outbuilding (building=garages). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599441,
+        "lon": 172.724484,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599441&lng=172.724484&z=19"
+      }
+    },
+    {
+      "id": "way/1318070245",
+      "type": "outbuilding",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e9e6de"
+      },
+      "trim": "#e9e9e6",
+      "eaves": 0,
+      "garages": [
+        {
+          "at": 0.5,
+          "width": 2.6,
+          "height": 2.1,
+          "colour": "#e9e6de"
+        }
+      ],
+      "evidence": "Not yet observed: a typical facade for a outbuilding (building=garages). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599521,
+        "lon": 172.724444,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599521&lng=172.724444&z=19"
+      }
+    },
+    {
+      "id": "way/1318070235",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#4a5157"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 5,
+        "type": "pair",
+        "door": 0.72,
+        "doorColour": "#1f3350"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599534,
+        "lon": 172.724358,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599534&lng=172.724358&z=19"
+      }
+    },
+    {
+      "id": "way/1318070246",
+      "type": "outbuilding",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#9a9fa3"
+      },
+      "trim": "#e9e9e6",
+      "eaves": 0,
+      "garages": [
+        {
+          "at": 0.5,
+          "width": 2.6,
+          "height": 2.1,
+          "colour": "#9a9fa3"
+        }
+      ],
+      "evidence": "Not yet observed: a typical facade for a outbuilding (building=garage). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599572,
+        "lon": 172.724418,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599572&lng=172.724418&z=19"
+      }
+    },
+    {
+      "id": "way/1318070247",
+      "type": "outbuilding",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#a24b3c"
+      },
+      "trim": "#e9e9e6",
+      "eaves": 0,
+      "garages": [
+        {
+          "at": 0.5,
+          "width": 2.6,
+          "height": 2.1,
+          "colour": "#a24b3c"
+        }
+      ],
+      "evidence": "Not yet observed: a typical facade for a outbuilding (building=garage). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599632,
+        "lon": 172.724387,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599632&lng=172.724387&z=19"
+      }
+    },
+    {
+      "id": "way/1318070236",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#a9c1d6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 4,
+        "type": "single",
+        "door": 0.28,
+        "doorColour": "#2f4a35"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599696,
+        "lon": 172.724275,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599696&lng=172.724275&z=19"
+      }
+    },
+    {
+      "id": "way/1318070284",
+      "type": "outbuilding",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "corrugated",
+        "colour": "#4e5a63"
+      },
+      "trim": "#e9e9e6",
+      "eaves": 0,
+      "lower": {
+        "door": 0.5,
+        "doorColour": "#e8c440"
+      },
+      "evidence": "Not yet observed: a typical facade for a outbuilding (small footprint (25 m²)). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.599984,
+        "lon": 172.724098,
+        "heading": 111,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.599984&lng=172.724098&z=19"
+      }
+    },
+    {
+      "id": "way/1318070316",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#f2efe6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 1,
+        "type": "single",
+        "door": 0.5,
+        "doorColour": "#2f4a35"
+      },
+      "upper": {
+        "windows": 1,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.600282,
+        "lon": 172.724031,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.600282&lng=172.724031&z=19"
+      }
+    },
+    {
+      "id": "way/1318070318",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#f2efe6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 3,
+        "type": "single",
+        "door": 0.28,
+        "doorColour": "#3a3f44"
+      },
+      "upper": {
+        "windows": 3,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.600553,
+        "lon": 172.723899,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.600553&lng=172.723899&z=19"
+      }
+    },
+    {
+      "id": "way/1318070319",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#9aa1a6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 3,
+        "type": "single",
+        "door": 0.28,
+        "doorColour": "#2f4a35"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.60064,
+        "lon": 172.723857,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.600640&lng=172.723857&z=19"
+      }
+    },
+    {
+      "id": "way/1318070321",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#f2efe6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 4,
+        "type": "single",
+        "door": 0.28,
+        "doorColour": "#7a3a2a"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.600799,
+        "lon": 172.72378,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.600799&lng=172.723780&z=19"
+      }
+    },
+    {
+      "id": "way/1318072323",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#f2efe6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#7a3a2a"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601028,
+        "lon": 172.72359,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601028&lng=172.723590&z=19"
+      }
+    },
+    {
+      "id": "way/1318072331",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d8a49a"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 2,
+        "type": "sash",
+        "door": 0.28,
+        "doorColour": "#7a3a2a"
+      },
+      "upper": {
+        "windows": 2,
+        "type": "sash"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601062,
+        "lon": 172.723652,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601062&lng=172.723652&z=19"
+      }
+    },
+    {
+      "id": "way/1318072324",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e9dfc0"
+      },
+      "trim": "#3a3f44",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#e8c440"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.60112,
+        "lon": 172.723544,
+        "heading": 110,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601120&lng=172.723544&z=19"
+      }
+    },
+    {
+      "id": "way/1318072332",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#f2efe6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "pair",
+        "door": 0.28,
+        "doorColour": "#1f3350"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601164,
+        "lon": 172.723601,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601164&lng=172.723601&z=19"
+      }
+    },
+    {
+      "id": "way/1318072333",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "board",
+        "colour": "#f2efe6"
+      },
+      "trim": "#3a3f44",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#e8c440"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601262,
+        "lon": 172.723552,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601262&lng=172.723552&z=19"
+      }
+    },
+    {
+      "id": "way/1318072334",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d8a49a"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 2,
+        "type": "single",
+        "door": 0.72,
+        "doorColour": "#e9e9e6"
+      },
+      "upper": {
+        "windows": 2,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601367,
+        "lon": 172.723499,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601367&lng=172.723499&z=19"
+      }
+    },
+    {
+      "id": "way/1318072336",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d8a49a"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 2,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#2f4a35"
+      },
+      "upper": {
+        "windows": 2,
+        "type": "sash"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601506,
+        "lon": 172.723429,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601506&lng=172.723429&z=19"
+      }
+    },
+    {
+      "id": "way/1318072337",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#b9cdb0"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "pair",
+        "door": 0.28,
+        "doorColour": "#7a3a2a"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=detached). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601621,
+        "lon": 172.723372,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601621&lng=172.723372&z=19"
+      }
+    },
+    {
+      "id": "way/1318072338",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#9aa1a6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "single",
+        "door": 0.72,
+        "doorColour": "#7a3a2a"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=house). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601688,
+        "lon": 172.723338,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601688&lng=172.723338&z=19"
+      }
+    },
+    {
+      "id": "way/1318072339",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#a9c1d6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "single",
+        "door": 0.5,
+        "doorColour": "#e9e9e6"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=house). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.601746,
+        "lon": 172.723309,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601746&lng=172.723309&z=19"
+      }
+    },
+    {
+      "id": "way/1318072340",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#a9c1d6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#1f3350"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (building=house). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.6018,
+        "lon": 172.723281,
+        "heading": 290,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.601800&lng=172.723281&z=19"
+      }
+    },
+    {
+      "id": "way/1318072361",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#4a5157"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 4,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#e9e9e6"
+      },
+      "upper": {
+        "windows": 4,
+        "type": "sash"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602101,
+        "lon": 172.72313,
+        "heading": 288,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602101&lng=172.723130&z=19"
+      }
+    },
+    {
+      "id": "way/1318072362",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e6d38a"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 4,
+        "type": "single",
+        "door": 0.72,
+        "doorColour": "#1f3350"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602211,
+        "lon": 172.723078,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602211&lng=172.723078&z=19"
+      }
+    },
+    {
+      "id": "way/1318072364",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "board",
+        "colour": "#4a5157"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 3,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#7a3a2a"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602416,
+        "lon": 172.722977,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602416&lng=172.722977&z=19"
+      }
+    },
+    {
+      "id": "way/1318072377",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "board",
+        "colour": "#b9cdb0"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 5,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#7a3a2a"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602538,
+        "lon": 172.722917,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602538&lng=172.722917&z=19"
+      }
+    },
+    {
+      "id": "way/1318072330",
+      "type": "civic",
+      "storeys": 3,
+      "name": null,
+      "wall": {
+        "cladding": "render",
+        "colour": "#d8cfae"
+      },
+      "trim": "#f2f2ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 5,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#e8c440"
+      },
+      "upper": {
+        "windows": 5,
+        "type": "pair"
+      },
+      "evidence": "Not yet observed: a typical facade for a civic (building=school). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602539,
+        "lon": 172.722838,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602539&lng=172.722838&z=19"
+      }
+    },
+    {
+      "id": "way/1318072378",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#9aa1a6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 1,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#7a3a2a"
+      },
+      "upper": {
+        "windows": 1,
+        "type": "pair"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602622,
+        "lon": 172.722876,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602622&lng=172.722876&z=19"
+      }
+    },
+    {
+      "id": "way/1318072379",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#f2efe6"
+      },
+      "trim": "#3a3f44",
+      "eaves": 0,
+      "lower": {
+        "windows": 2,
+        "type": "sash",
+        "door": 0.72,
+        "doorColour": "#e9e9e6"
+      },
+      "upper": {
+        "windows": 2,
+        "type": "sash"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602779,
+        "lon": 172.722799,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602779&lng=172.722799&z=19"
+      }
+    },
+    {
+      "id": "way/290088412",
+      "type": "outbuilding",
+      "storeys": 1,
+      "name": "Port Talk",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#4e5a63"
+      },
+      "trim": "#e9e9e6",
+      "eaves": 0,
+      "lower": {
+        "door": 0.5,
+        "doorColour": "#e8c440"
+      },
+      "evidence": "Not yet observed: a typical facade for a outbuilding (building=cabin). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.602884,
+        "lon": 172.722748,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.602884&lng=172.722748&z=19"
+      }
+    },
+    {
+      "id": "way/156917155",
+      "type": "civic",
+      "storeys": 1,
+      "name": "Lyttelton Harbour Information Centre",
+      "wall": {
+        "cladding": "render",
+        "colour": "#efede6"
+      },
+      "trim": "#f2f2ee",
+      "eaves": 0.35,
+      "lower": {
+        "windows": 2,
+        "type": "pair",
+        "door": 0.5,
+        "doorColour": "#3a3f44"
+      },
+      "evidence": "Not yet observed: a typical facade for a civic (building=civic). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603202,
+        "lon": 172.722508,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603202&lng=172.722508&z=19"
+      }
+    },
+    {
+      "id": "way/156917156",
+      "type": "house",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "board",
+        "colour": "#9aa1a6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 1,
+        "type": "sash",
+        "door": 0.5,
+        "doorColour": "#c8262c"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.60325,
+        "lon": 172.722485,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603250&lng=172.722485&z=19"
+      }
+    },
+    {
+      "id": "way/101185447",
+      "type": "shop",
+      "storeys": 1,
+      "name": "19 Oxford Street",
+      "wall": {
+        "cladding": "render",
+        "colour": "#efede6"
+      },
+      "trim": "#e6e5df",
+      "eaves": 0,
+      "shopfront": {
+        "bays": 2,
+        "door": 0.5,
+        "frame": "#3a3d40",
+        "stall": "#d8d6d0"
+      },
+      "parapet": {
+        "shape": "flat",
+        "above": 0.5
+      },
+      "evidence": "Not yet observed: a typical facade for a shop (building=office, office=union). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603397,
+        "lon": 172.722492,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603397&lng=172.722492&z=19"
+      }
+    },
+    {
+      "id": "way/101185374",
+      "type": "shop",
+      "storeys": 1,
+      "name": null,
+      "wall": {
+        "cladding": "render",
+        "colour": "#e3dccb"
+      },
+      "trim": "#e6e5df",
+      "eaves": 0.3,
+      "shopfront": {
+        "bays": 4,
+        "door": 0.5,
+        "frame": "#3a3d40",
+        "stall": "#d8d6d0"
+      },
+      "evidence": "Not yet observed: a typical facade for a shop (building=commercial). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603438,
+        "lon": 172.722392,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603438&lng=172.722392&z=19"
+      }
+    },
+    {
+      "id": "way/645500258",
+      "type": "house",
+      "storeys": 2,
+      "name": "16 Oxford Street",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#9aa1a6"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 2,
+        "type": "sash",
+        "door": 0.28,
+        "doorColour": "#c8262c"
+      },
+      "upper": {
+        "windows": 2,
+        "type": "sash"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603556,
+        "lon": 172.722334,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603556&lng=172.722334&z=19"
+      }
+    },
+    {
+      "id": "way/157225105",
+      "type": "shop",
+      "storeys": 2,
+      "name": "Tin Palace",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#d8cfae"
+      },
+      "trim": "#e6e5df",
+      "eaves": 0,
+      "shopfront": {
+        "bays": 3,
+        "door": 0.5,
+        "frame": "#3a3d40",
+        "stall": "#d8d6d0"
+      },
+      "parapet": {
+        "shape": "flat",
+        "above": 0.5
+      },
+      "upper": {
+        "windows": 2,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a shop (building=commercial). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603654,
+        "lon": 172.722365,
+        "heading": 289,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603654&lng=172.722365&z=19"
+      }
+    },
+    {
+      "id": "way/101185461",
+      "type": "house",
+      "storeys": 2,
+      "name": null,
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#3a3f44"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 5,
+        "type": "single",
+        "door": 0.28,
+        "doorColour": "#3a3f44"
+      },
+      "upper": {
+        "windows": 5,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603656,
+        "lon": 172.722286,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603656&lng=172.722286&z=19"
+      }
+    },
+    {
+      "id": "way/101185362",
+      "type": "shop",
+      "storeys": 2,
+      "name": "The British",
+      "wall": {
+        "cladding": "render",
+        "colour": "#e3dccb"
+      },
+      "trim": "#e6e5df",
+      "eaves": 0,
+      "shopfront": {
+        "bays": 5,
+        "door": 0.5,
+        "frame": "#3a3d40",
+        "stall": "#d8d6d0"
+      },
+      "parapet": {
+        "shape": "flat",
+        "above": 0.5
+      },
+      "upper": {
+        "windows": 4,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a shop (building=commercial). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.603846,
+        "lon": 172.722193,
+        "heading": 109,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.603846&lng=172.722193&z=19"
+      }
+    },
+    {
+      "id": "way/101185446",
+      "type": "house",
+      "storeys": 2,
+      "name": "Harbourside House",
+      "wall": {
+        "cladding": "weatherboard",
+        "colour": "#e9dfc0"
+      },
+      "trim": "#f4f3ee",
+      "eaves": 0,
+      "lower": {
+        "windows": 3,
+        "type": "single",
+        "door": 0.28,
+        "doorColour": "#3a3f44"
+      },
+      "upper": {
+        "windows": 3,
+        "type": "single"
+      },
+      "evidence": "Not yet observed: a typical facade for a house (unspecified building, residential area). Replace with notes from photos.",
+      "street": "Oxford Street",
+      "photo": {
+        "lat": -43.604079,
+        "lon": 172.722085,
+        "heading": 126,
+        "mapillary": "https://www.mapillary.com/app/?lat=-43.604079&lng=172.722085&z=19"
+      }
+    }
+  ]
+}

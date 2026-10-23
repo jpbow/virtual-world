@@ -61,4 +61,12 @@ class RegistrationTests(unittest.TestCase):
         self.assertIsNotNone(edge);self.assertAlmostEqual(edge,-1,delta=.5)
 
 
+class ScaffoldTests(unittest.TestCase):
+    def test_photo_point_faces_the_facade_from_across_the_street(self):
+        # A facade on y = 8 facing south onto a street along y = 0: shoot from 3 m past the centreline, heading north.
+        f=dict(a=[0.,8.],b=[10.,8.],t=[1.,0.],n=[0.,-1.],length=10.)
+        p=S.photo_point(f,[LineString([(-50,0),(50,0)])],None)
+        self.assertEqual(p['heading'],0);self.assertIn('mapillary.com',p['mapillary'])
+
+
 if __name__=='__main__':unittest.main()

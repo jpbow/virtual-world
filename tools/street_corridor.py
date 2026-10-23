@@ -20,6 +20,7 @@ concrete and pavers. The viewer drapes it onto the terrain, under the inventory'
 
   npm run street -- --name london              measure and build public/streets/<name>.glb
   npm run street -- --name london --measure    print the cross-sections only
+  npm run street -- --name oxford --street "Oxford Street"   another street with a street inventory of that name
 """
 import argparse,json,math,subprocess,sys
 from pathlib import Path
@@ -33,7 +34,7 @@ from street_buildings import blender
 import os
 KIT=Path(os.environ.get('CITY_KIT',P.ROOT/'modular-kit-city-builder-starter-kit'))
 
-STREETS={'london':'London Street'}
+STREETS={'london':'London Street'}            # inventory name -> OSM street; others come from --street
 STEP=.95                                       # station spacing (m)
 CAR_LENGTH,CAR_WIDTH=4.5,1.8
 GAP={'parallel':.35,'angle':.2,'perpendicular':.2}
@@ -106,9 +107,7 @@ def kerb_profile(stations,samples):
 
 def facades(name):
     """Registered facade lines of modelled buildings, else none (OSM footprints are used as well)."""
-    job=P.CACHE/'buildings-london-job.json'
-    if not job.exists():return []
-    return [LineString([m['facade']['a'],m['facade']['b']]) for m in json.loads(job.read_text())['measured']]
+    return [LineString([m['facade']['a'],m['facade']['b']]) for job in P.CACHE.glob('buildings-*-job.json') for m in json.loads(job.read_text())['measured']]
 
 
 def footpath_edge(st,side,kerb,walls,footprints):
@@ -272,8 +271,11 @@ def report(c):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument('--name',default='london',choices=sorted(STREETS));ap.add_argument('--measure',action='store_true')
+    ap.add_argument('--name',default='london');ap.add_argument('--street',help='the OSM street name (default: known for london)')
+    ap.add_argument('--measure',action='store_true')
     args=ap.parse_args()
+    if args.street:STREETS[args.name]=args.street
+    if args.name not in STREETS:sys.exit(f'Give the OSM street for {args.name} with --street "Street Name"')
     if not (P.ROOT/f'public/inventory/{args.name}/objects.geojson').exists():sys.exit(f'Run npm run inventory -- --name {args.name} first')
     c=measure(args.name);P.log('Street corridor',c['street'],f"{len(c['stations'])} stations, {c['stations'][-1]['s']-c['stations'][0]['s']:.0f} m");report(c)
     if args.measure:return
@@ -288,6 +290,8 @@ def main():
         if l.startswith('STREET'):P.log(' ',l[7:])
     if r.returncode or not glb.exists():sys.stderr.write(r.stdout[-3000:]+r.stderr[-3000:]);sys.exit('Blender failed')
     P.log('  wrote',glb.relative_to(P.ROOT),f'{glb.stat().st_size/1e6:.1f} MB')
+    # The streets the viewer loads.
+    (PUBLIC/'index.json').write_text(json.dumps(sorted(q.stem for q in PUBLIC.glob('*.glb')))+'\n')
 
 
 if __name__=='__main__':main()
