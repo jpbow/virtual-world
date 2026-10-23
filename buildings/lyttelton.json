@@ -1,0 +1,18 @@
+{
+  "title": "Lyttelton township and port",
+  "notes": "Every building in the township and port not modelled in london.json is typed by rule (tools/building_typology.py) and measured from LINZ 1 m LiDAR: roofs, heights, facade registration and ground levels are measured; facade layouts and wall colours are typical for the type, not observed. Add an entry to buildings[] (as in london.json) to replace a building's typical facade with observed notes.",
+  "auto": {
+    "bounds": [
+      -1050,
+      -800,
+      1600,
+      1100
+    ],
+    "portBelow": -60,
+    "exclude": [
+      "london"
+    ],
+    "chunk": 400
+  },
+  "buildings": []
+}

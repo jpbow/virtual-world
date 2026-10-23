@@ -13,3 +13,15 @@ public/plants/imported/
 # Local secrets, e.g. VITE_LINZ_BASEMAPS_KEY
 .env.local
 .env.*.local
+
+# Blender save backups (buildings/*.blend)
+*.blend1
+
+# Generated street-building models (tools/street_buildings.py)
+public/buildings/
+
+# Generated street furniture kit and placements (tools/street_furniture.py)
+public/street-kit/
+
+# Generated street corridors (tools/street_corridor.py)
+public/streets/
