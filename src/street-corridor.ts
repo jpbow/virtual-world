@@ -98,3 +98,12 @@ function roadsOutside<R extends {points:number[][]}>(roads:R[],outline:StreetOut
   }
   return out;
 }
+
+/** The sets a tool has built into public/<dir>/ (its index.json: e.g. buildings, streets, street-kit). */
+export async function listedSets(dir:string):Promise<string[]>{
+  try{
+    const response=await fetch(`/${dir}/index.json`);
+    if(!response.ok||!(response.headers.get('content-type')??'').includes('json'))return [];
+    const names=await response.json();return Array.isArray(names)?names.filter(n=>typeof n==='string'):[];
+  }catch{return [];}
+}

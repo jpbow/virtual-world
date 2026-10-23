@@ -24,6 +24,7 @@ item; earlier sources win. Anything else faces the nearest mapped road.
 
   npm run furniture -- --name london              gather evidence, place, and build the kit if missing
   npm run furniture -- --name london --kit        rebuild the kit from tools/blender_street_kit.py
+  npm run furniture -- --name oxford --bounds W S E N   another area, in local metres
 """
 import argparse,json,math,os,re,subprocess,sys
 from pathlib import Path
@@ -202,8 +203,11 @@ def build_kit(rebuild):
 
 def main():
     ap=argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument('--name',default='london',choices=sorted(AREAS));ap.add_argument('--kit',action='store_true',help='rebuild the kit .blend from the script')
+    ap.add_argument('--name',default='london');ap.add_argument('--kit',action='store_true',help='rebuild the kit .blend from the script')
+    ap.add_argument('--bounds',nargs=4,type=float,metavar=('W','S','E','N'),help='the area in local metres (default: known for london)')
     args=ap.parse_args()
+    if args.bounds:AREAS[args.name]=tuple(args.bounds)
+    if args.name not in AREAS:sys.exit(f'Give the area for {args.name} with --bounds W S E N (local metres)')
     glb=build_kit(args.kit)
     placements=gather(args.name)
     from collections import Counter
@@ -212,6 +216,8 @@ def main():
     out.write_text(json.dumps(dict(name=args.name,kit='street-kit.glb',sources={'OpenStreetMap':'© OpenStreetMap contributors, ODbL','Mapillary':'Mapillary map features, CC BY-SA 4.0',
                     'Christchurch City Council':'Christchurch City Council park asset registers, CC BY 4.0'},placements=placements),indent=1))
     P.log('Street furniture',args.name,len(placements),'placements ->',out.relative_to(P.ROOT),'· kit',glb.relative_to(P.ROOT))
+    # The areas the viewer loads.
+    (PUBLIC/'index.json').write_text(json.dumps(sorted(q.stem for q in PUBLIC.glob('*.json') if q.stem!='index'))+'\n')
 
 
 if __name__=='__main__':main()
