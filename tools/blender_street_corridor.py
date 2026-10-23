@@ -1,7 +1,7 @@
 """Blender side of tools/street_corridor.py (run inside Blender, not the venv).
 
-Lays the measured cross-sections out as strips between stations, per side of the street: traffic lanes,
-parking lanes, a 0.3 m concrete gutter, a 150 mm kerb (lowered to 20 mm at crossings, a kerb ramp), the kerb
+Lays the measured cross-sections out as strips between stations, per side of the street: the carriageway
+(one asphalt, parking lanes included), a 0.3 m concrete gutter, a 150 mm kerb (lowered to 20 mm at crossings, a kerb ramp), the kerb
 top and the footpath up to the building line, which ends in a short skirt into the ground. Coordinates are
 local metres with z the height above the ground; the viewer drapes the mesh onto the terrain. Surfaces use
 textures cropped from the city kit atlas, tinted per surface. Saves streets/<name>.blend and the GLB.
@@ -29,7 +29,7 @@ def material(name,texture,tint,rough):
     m.diffuse_color=linear(tint);m['tile']=TILES[texture];return m
 
 
-MATS={'lane':material('road asphalt','asphalt','#ffffff',.9),'parking':material('road parking lane','asphalt','#d9d4ca',.9),
+MATS={'lane':material('road asphalt','asphalt','#ffffff',.9),
       'gutter':material('road gutter','concrete','#b4b2ab',.85),'kerb':material('kerb concrete','concrete','#dcdad3',.8),
       'footpath':material('footpath pavers','pavers','#b8b8b4',.85)}
 
@@ -56,23 +56,13 @@ class Mesh:
 def side(mesh,key,sign):
     st=C['stations'];sd=C['sides'][key];H=C['kerbHeight'];LOW=C['kerbLow']
     def at(i,off,z):x,y=st[i]['x']+sign*st[i]['n'][0]*off,st[i]['y']+sign*st[i]['n'][1]*off;return Vector((x,y,z))
-    def inner(i):
-        s=st[i]['s']
-        for r in sd['runs']:
-            if r['s0']<=s<=r['s1']:return min(r['inner'],sd['kerb'][i]-.5)
-        return None
     for i in range(len(st)-1):
         j=i+1;ka,kb=sd['kerb'][i],sd['kerb'][j];ga,gb=ka-.3,kb-.3;ea,eb=sd['edge'][i],sd['edge'][j]
         ha=LOW if sd['low'][i] else H;hb=LOW if sd['low'][j] else H
-        pa,pb=inner(i),inner(j)
-        # Traffic lane (to the parking lane where there is one), parking lane, gutter.
-        la,lb=(pa if pa is not None else ga),(pb if pb is not None else gb)
-        if pa is not None and pb is None:lb=gb
-        if pb is not None and pa is None:la=ga
+        # One asphalt from the centreline to the gutter, parking lanes included; the inventory paints the bays.
         q=lambda a0,b0,a1,b1,z0,z1:[at(i,a0,z0),at(j,b0,z1),at(j,b1,z1),at(i,a1,z0)]
         flip=lambda pts:pts if sign>0 else pts[::-1]
-        mesh.quad(flip(q(0,0,la,lb,0,0)),MATS['lane'])
-        if pa is not None or pb is not None:mesh.quad(flip(q(la,lb,ga,gb,0,0)),MATS['parking'])
+        mesh.quad(flip(q(0,0,ga,gb,0,0)),MATS['lane'])
         mesh.quad(flip(q(ga,gb,ka,kb,0,0)),MATS['gutter'])
         s=(st[i]['s'],st[j]['s'],st[j]['s'],st[i]['s'])
         # Kerb face, kerb top, footpath (2% fall to the kerb), and a skirt into the ground at the building line.

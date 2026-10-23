@@ -11,7 +11,6 @@ The OSM road ribbon has no kerbs or footpaths. For a street with a street invent
   kerb is interpolated, which tapers the kerb into and out of crossing build-outs.
 - **Footpaths** from the kerb back to the building line: the LiDAR-registered facades of modelled
   buildings (tools/street_buildings.py), else OSM footprints, else a 3 m footpath.
-- **Parking lanes** where the runs are, so they can be surfaced apart from the traffic lanes.
 
 Blender (tools/blender_street_corridor.py) builds the carriageway, parking lanes, gutters, kerbs (lowered at
 crossings) and footpaths as one mesh in local metres, height above the ground in z, textured with surfaces
@@ -139,8 +138,8 @@ def measure(name):
         edge=np.maximum(edge,kerb+1.5)
         low=[source[i]=='zebra crossing' for i in range(len(stations))]
         sides[side]=dict(kerb=kerb.round(2).tolist(),edge=edge.round(2).tolist(),low=low,source=source,runs=runs[side])
-    corner=corners(name,features,line,stations,{'left':sides[1],'right':sides[-1]})
-    return dict(name=name,street=STREETS[name],corners=corner,stations=[dict(s=st['s'],x=round(st['x'],3),y=round(st['y'],3),n=[round(float(v),5) for v in st['n']]) for st in stations],
+    corner,road=corners(name,features,line,stations,{'left':sides[1],'right':sides[-1]})
+    return dict(name=name,street=STREETS[name],corners=corner,road=road,stations=[dict(s=st['s'],x=round(st['x'],3),y=round(st['y'],3),n=[round(float(v),5) for v in st['n']]) for st in stations],
                 sides={'left':sides[1],'right':sides[-1]},kerbHeight=KERB,kerbLow=KERB_LOW)
 
 
@@ -194,7 +193,7 @@ def corners(name,features,line,stations,sides):
         return Polygon(pts_in+pts_out[::-1]).buffer(0)
     lanes=unary_union([strip('left',1,'lane'),strip('right',-1,'lane')]);paths=unary_union([strip('left',1,'path'),strip('right',-1,'path')])
     walls=unary_union([Polygon(b['ring']).buffer(0) for b in features['buildings'] if Polygon(b['ring']).distance(line)<60])
-    out=[]
+    out=[];road=[lanes]
     for end in (0,-1):
         st=stations[end];P0=Point(st['x'],st['y']);sign=-1 if end==0 else 1        # toward the junction along the line
         s_end=st['s'];probe=LineString([line.interpolate(s_end),line.interpolate(min(line.length,max(0,s_end+sign*30)))])
@@ -213,7 +212,7 @@ def corners(name,features,line,stations,sides):
                     a,b_,how=arm_kerbs(piece,zebras,r.get('name'),r['width']);names.append(f"{r['name']} ({how}: {a:.1f}/{b_:.1f} m)")
                     parts.append(offset_polygon(piece,a,b_,-3,piece.length+3))
         carriage=unary_union(parts).buffer(CORNER_RADIUS,join_style=1).buffer(-CORNER_RADIUS,join_style=1)
-        zone=J.buffer(CORNER_REACH)
+        zone=J.buffer(CORNER_REACH);road.append(carriage.intersection(zone))
         # The corridor's side of the junction: toward the end station.
         u=np.array([P0.x-J.x,P0.y-J.y]);u/=np.linalg.norm(u)
         side=Polygon([np.array([J.x,J.y])+u*-1+np.array([-u[1],u[0]])*k for k in (-1e3,1e3)]+[np.array([J.x,J.y])+u*1e3+np.array([-u[1],u[0]])*k for k in (1e3,-1e3)])
@@ -233,7 +232,8 @@ def corners(name,features,line,stations,sides):
         out.append(dict(end='west' if end==0 else 'east',junction=[round(J.x,2),round(J.y,2)],streets=names,
                         footpath=[t for q in polys(foot) for t in tris(q)],gutter=[t for q in polys(gutter) for t in tris(q)],
                         kerbs=kerbs,skirts=lines(skirt),area=round(foot.area,1)))
-    return out
+    road=unary_union(road)
+    return out,[[[round(x,2),round(y,2)] for x,y in q.exterior.coords] for q in getattr(road,'geoms',[road]) if q.geom_type=='Polygon']
 
 
 def textures():
@@ -268,6 +268,8 @@ def main():
     PUBLIC.mkdir(parents=True,exist_ok=True);glb=PUBLIC/f'{args.name}.glb';blend=P.ROOT/f'streets/{args.name}.blend';blend.parent.mkdir(exist_ok=True)
     job=dict(corridor=c,textures=str(textures()),tiles={k:v[1] for k,v in ATLAS.items()},glb=str(glb),blend=str(blend))
     path=P.CACHE/f'street-{args.name}-job.json';path.write_text(json.dumps(job))
+    # The carriageway outline (kerb to kerb, and the junctions), so the viewer can keep vegetation off the road.
+    (PUBLIC/f'{args.name}.json').write_text(json.dumps(dict(street=c['street'],road=c['road'])))
     r=subprocess.run([blender(),'-b','--factory-startup','--python',str(Path(__file__).with_name('blender_street_corridor.py')),'--',str(path)],capture_output=True,text=True)
     for l in r.stdout.splitlines():
         if l.startswith('STREET'):P.log(' ',l[7:])

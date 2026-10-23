@@ -47,3 +47,13 @@ export async function loadStreetCorridor(name:string,heightAt:(x:number,z:number
   const surfaceAt=(x:number,z:number)=>{from.set(x,1e4,z);ray.set(from,down);const hit=ray.intersectObject(group,true)[0];return hit?hit.point.y:null;};
   return {group,street,surfaceAt};
 }
+
+/** Vegetation without the plants that the canopy detection put on the street's carriageway (kerb to kerb and its
+ * junctions, from public/streets/<name>.json): there it is parked cars, umbrellas or awnings, not planting. */
+export async function clearedVegetation(name:string,trees:number[][]):Promise<number[][]>{
+  let road:number[][][];
+  try{const response=await fetch(`/streets/${name}.json`);if(!response.ok||!(response.headers.get('content-type')??'').includes('json'))return trees;road=(await response.json()).road;}catch{return trees;}
+  const boxes=road.map(r=>[Math.min(...r.map(p=>p[0])),Math.min(...r.map(p=>p[1])),Math.max(...r.map(p=>p[0])),Math.max(...r.map(p=>p[1]))]);
+  const inside=(x:number,y:number,ring:number[][])=>{let c=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){const [xi,yi]=ring[i],[xj,yj]=ring[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;};
+  return trees.filter(([x,y])=>!road.some((ring,k)=>x>=boxes[k][0]&&x<=boxes[k][2]&&y>=boxes[k][1]&&y<=boxes[k][3]&&inside(x,y,ring)));
+}
